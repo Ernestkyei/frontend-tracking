@@ -1,7 +1,7 @@
 
 A modern, real-time shipment tracking application built with **React**, **TypeScript**, and **Tailwind CSS**. Track packages, manage deliveries, and get real-time updates with QR code confirmation.
 
-## 🚀 Features
+## Features
 
 - **Public Tracking** - Track shipments without login using tracking number
 - **Customer Dashboard** - Manage all your shipments in one place
@@ -11,7 +11,7 @@ A modern, real-time shipment tracking application built with **React**, **TypeSc
 - **Real-time Updates** - Live location and status tracking
 - **Responsive Design** - Works on mobile, tablet, and desktop
 
-## 📦 Tech Stack
+## Tech Stack
 
 - **Frontend:** React 19 + TypeScript
 - **Styling:** Tailwind CSS 4
@@ -22,7 +22,7 @@ A modern, real-time shipment tracking application built with **React**, **TypeSc
 - **Build Tool:** Vite
 - **Notifications:** React Hot Toast
 
-## 🛠️ Installation
+## Installation
 
 ```bash
 # Clone the repository
