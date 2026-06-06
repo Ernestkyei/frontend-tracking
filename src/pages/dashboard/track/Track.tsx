@@ -1,5 +1,5 @@
 // pages/track/Track.tsx
-import { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   Package,
@@ -122,7 +122,8 @@ const mockShipmentData: Record<string, Shipment> = {
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-const STATUS_META: Record<string, { label: string; chip: string; dot: string; icon: JSX.Element }> = {
+// ✅ Fix 1: was JSX.Element — now React.ReactNode
+const STATUS_META: Record<string, { label: string; chip: string; dot: string; icon: React.ReactNode }> = {
   DELIVERED: {
     label: 'Delivered',
     chip: 'bg-emerald-50 text-emerald-700 border border-emerald-200',
@@ -180,12 +181,9 @@ function TimelineStep({
 
   return (
     <div className="relative flex gap-4">
-      {/* Connector line */}
       {!isLast && (
-        <div className={`absolute left-[15px] top-8 bottom-0 w-px ${done ? 'bg-emerald-200' : 'bg-gray-150 bg-gray-200'}`} />
+        <div className={`absolute left-[15px] top-8 bottom-0 w-px ${done ? 'bg-emerald-200' : 'bg-gray-200'}`} />
       )}
-
-      {/* Node */}
       <div className="shrink-0 relative z-10">
         {isLatest ? (
           <div className={`w-8 h-8 rounded-full flex items-center justify-center ${delivered ? 'bg-emerald-500' : 'bg-gray-900'}`}>
@@ -200,8 +198,6 @@ function TimelineStep({
           </div>
         )}
       </div>
-
-      {/* Content */}
       <div className={`flex-1 pb-7 ${isLast ? 'pb-0' : ''}`}>
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-1 mb-1">
           <div>
@@ -224,7 +220,8 @@ function TimelineStep({
 
 // ─── Info card ────────────────────────────────────────────────────────────────
 
-function InfoCard({ title, icon, children }: { title: string; icon: JSX.Element; children: React.ReactNode }) {
+// ✅ Fix 2: was JSX.Element — now React.ReactNode
+function InfoCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="px-5 py-4 border-b border-gray-100 flex items-center gap-2">
@@ -319,7 +316,7 @@ export default function Track() {
 
       <main className="max-w-4xl mx-auto px-6 py-10 space-y-6">
 
-        {/* ── Search bar (always visible) ───────────────────────── */}
+        {/* ── Search bar ───────────────────────────────────────── */}
         <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
           <form onSubmit={handleSearch} className="flex gap-3">
             <div className="relative flex-1">
@@ -348,7 +345,7 @@ export default function Track() {
           )}
         </div>
 
-        {/* ── Error ────────────────────────────────────────────────── */}
+        {/* ── Error ──────────────────────────────────────────────── */}
         {error && (
           <div className="bg-white rounded-2xl border border-red-100 shadow-sm p-8 text-center">
             <div className="w-12 h-12 rounded-2xl bg-red-50 flex items-center justify-center mx-auto mb-4">
@@ -370,7 +367,6 @@ export default function Track() {
           <>
             {/* Hero card */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-              {/* Top band */}
               <div className="bg-gray-900 px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                   <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-1">Tracking number</p>
@@ -439,8 +435,6 @@ export default function Track() {
 
             {/* Details grid */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-
-              {/* Package */}
               <InfoCard title="Package" icon={<Package className="w-4 h-4" />}>
                 <DetailRow label="Type" value={shipment.packageType} />
                 <DetailRow label="Weight" value={`${shipment.weight} kg`} />
@@ -448,7 +442,6 @@ export default function Track() {
                 <DetailRow label="Description" value={<span className="text-right leading-snug">{shipment.description}</span>} />
               </InfoCard>
 
-              {/* Route */}
               <InfoCard title="Route" icon={<MapPin className="w-4 h-4" />}>
                 <div className="space-y-4">
                   <div className="relative pl-5">
@@ -465,7 +458,6 @@ export default function Track() {
                 </div>
               </InfoCard>
 
-              {/* Sender */}
               <InfoCard title="Sender" icon={<User className="w-4 h-4" />}>
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-9 h-9 rounded-full bg-gray-100 flex items-center justify-center text-xs font-semibold text-gray-700 shrink-0">
@@ -482,7 +474,6 @@ export default function Track() {
                 </div>
               </InfoCard>
 
-              {/* Recipient */}
               <InfoCard title="Recipient" icon={<User className="w-4 h-4" />}>
                 <div className="flex items-center gap-3 mb-4">
                   <div className="w-9 h-9 rounded-full bg-blue-100 flex items-center justify-center text-xs font-semibold text-blue-700 shrink-0">
