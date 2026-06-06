@@ -1,29 +1,36 @@
-import React, { useState, useEffect, useRef } from 'react';
+// components/layout/Header.tsx
+import { useState, useEffect } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { 
-  Truck,
-  Menu, 
-  X, 
-  ChevronRight,
-  Clock,
-  Shield,
-  MapPin
-} from 'lucide-react';
+import { Truck, Menu, X } from 'lucide-react';
 
-const Header: React.FC = () => {
+// Define User type
+interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: 'CUSTOMER' | 'DRIVER' | 'ADMIN';
+}
+
+export default function Header() {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [user, setUser] = useState<User | null>(null);
   const location = useLocation();
   const navigate = useNavigate();
-  const prevPathRef = useRef(location.pathname);
 
-  // Navigation links
-  const navLinks = [
-    { path: '/', label: 'Home' },
-    { path: '/about-us', label: 'About us' },
-    { path: '/how-it-works', label: 'How it works' },   
-    { path: '/send-package', label: 'Send a package' },
-  ];
+  // Check auth status
+  const checkAuthStatus = () => {
+    const token = localStorage.getItem('token');
+    const userData = localStorage.getItem('user');
+    if (token && userData) {
+      setIsLoggedIn(true);
+      setUser(JSON.parse(userData));
+    } else {
+      setIsLoggedIn(false);
+      setUser(null);
+    }
+  };
 
   // Handle scroll effect
   useEffect(() => {
@@ -34,13 +41,40 @@ const Header: React.FC = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  
+  // Check auth on mount and when location changes
   useEffect(() => {
-    if (prevPathRef.current !== location.pathname) {
-      setIsMobileMenuOpen(false);
-      prevPathRef.current = location.pathname;
-    }
+    checkAuthStatus();
   }, [location.pathname]);
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    localStorage.removeItem('user');
+    setIsLoggedIn(false);
+    setUser(null);
+    navigate('/');
+  };
+
+  // Public navigation links
+  const publicLinks = [
+    { path: '/', label: 'Home' },
+    { path: '/how-it-works', label: 'How it works' },
+    { path: '/about-us', label: 'About us ' },
+  ];
+
+  // Get dashboard link based on role
+  const getDashboardPath = () => {
+    if (!user) return '/dashboard';
+    if (user.role === 'ADMIN') return '/admin/dashboard';
+    if (user.role === 'DRIVER') return '/driver/dashboard';
+    return '/dashboard';
+  };
+
+  const getDashboardLabel = () => {
+    if (!user) return 'Dashboard';
+    if (user.role === 'ADMIN') return 'Admin';
+    if (user.role === 'DRIVER') return 'Driver';
+    return 'Dashboard';
+  };
 
   return (
     <header 
@@ -53,10 +87,7 @@ const Header: React.FC = () => {
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 lg:h-20">
           {/* Logo */}
-          <Link 
-            to="/" 
-            className="flex items-center space-x-2 group"
-          >
+          <Link to="/" className="flex items-center space-x-2 group">
             <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-1.5 transition-transform group-hover:scale-105">
               <Truck className="w-6 h-6 text-white" />
             </div>
@@ -67,20 +98,20 @@ const Header: React.FC = () => {
 
           {/* Desktop Navigation */}
           <div className="hidden md:flex items-center space-x-1">
-            {navLinks.map((link) => {
+            {/* Public links */}
+            {publicLinks.map((link) => {
               const isActive = location.pathname === link.path;
               return (
                 <Link
                   key={link.path}
                   to={link.path}
-                  className={`relative flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200 ${
+                  className={`relative px-4 py-2 rounded-lg transition-all duration-200 ${
                     isActive
                       ? 'text-blue-600 font-semibold'
                       : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
                   }`}
                 >
-                
-                  <span>{link.label}</span>
+                  {link.label}
                   {isActive && (
                     <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />
                   )}
@@ -88,14 +119,45 @@ const Header: React.FC = () => {
               );
             })}
 
-            {/* CTA Button */}
-            <button
-              onClick={() => navigate('/get-started')}
-              className="ml-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-2 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center space-x-2 shadow-md hover:shadow-lg"
-            >
-              <span>Signup</span>
-              <ChevronRight className="w-4 h-4" />
-            </button>
+            {/* Dashboard link (only when logged in) */}
+            {isLoggedIn && (
+              <Link
+                to={getDashboardPath()}
+                className={`relative px-4 py-2 rounded-lg transition-all duration-200 ${
+                  location.pathname === getDashboardPath()
+                    ? 'text-blue-600 font-semibold'
+                    : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'
+                }`}
+              >
+                {getDashboardLabel()} Dashboard
+              </Link>
+            )}
+
+            {/* Auth Buttons */}
+            {isLoggedIn ? (
+              <div className="flex items-center space-x-2 ml-4">
+                <div className="px-3 py-1 rounded-lg bg-gray-100">
+                  <span className="text-sm font-medium text-gray-700">
+                    {user?.name?.split(' ')[0] || 'User'}
+                  </span>
+                </div>
+                <button
+                  onClick={handleLogout}
+                  className="px-4 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                >
+                  Logout
+                </button>
+              </div>
+            ) : (
+              <div className="ml-4">
+                <Link
+                  to="/signup"
+                  className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-5 py-2 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg"
+                >
+                  Sign Up
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -110,64 +172,71 @@ const Header: React.FC = () => {
 
         {/* Mobile Navigation */}
         {isMobileMenuOpen && (
-          <div className="md:hidden py-4 border-t border-gray-100 animate-slide-down">
+          <div className="md:hidden py-4 border-t border-gray-100">
             <div className="flex flex-col space-y-3">
-              {navLinks.map((link) => {
+              {/* Public links */}
+              {publicLinks.map((link) => {
                 const isActive = location.pathname === link.path;
                 return (
                   <Link
                     key={link.path}
                     to={link.path}
-                    className={`flex items-center space-x-3 px-3 py-3 rounded-lg transition-all ${
+                    className={`block px-3 py-3 rounded-lg transition-all ${
                       isActive
                         ? 'bg-blue-50 text-blue-600 font-semibold'
                         : 'text-gray-700 hover:bg-gray-50'
                     }`}
+                    onClick={() => setIsMobileMenuOpen(false)}
                   >
-                  
-                    <span>{link.label}</span>
-                    {isActive && (
-                      <ChevronRight className="w-4 h-4 ml-auto" />
-                    )}
+                    {link.label}
                   </Link>
                 );
               })}
-              
-              {/* Mobile CTA Button */}
-              <div className="pt-4 mt-2 border-t border-gray-100">
-                <button
-                  onClick={() => {
-                    navigate('/get-started');
-                    setIsMobileMenuOpen(false);
-                  }}
-                  className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-3 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 flex items-center justify-center space-x-2"
-                >
-                  <span>Get started</span>
-                  <ChevronRight className="w-4 h-4" />
-                </button>
-              </div>
 
-              {/* Quick Stats for Mobile */}
-              <div className="pt-4 mt-2 grid grid-cols-3 gap-2">
-                <div className="text-center p-2">
-                  <Clock className="w-5 h-5 text-blue-600 mx-auto mb-1" />
-                  <p className="text-xs text-gray-600">Fast Delivery</p>
+              {/* Dashboard link (only when logged in) */}
+              {isLoggedIn && (
+                <Link
+                  to={getDashboardPath()}
+                  className="block px-3 py-3 rounded-lg text-gray-700 hover:bg-gray-50"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  {getDashboardLabel()} Dashboard
+                </Link>
+              )}
+
+              {/* Auth Section for Mobile */}
+              {isLoggedIn ? (
+                <>
+                  <div className="pt-4 mt-2 border-t border-gray-100">
+                    <div className="px-3 py-2 text-sm text-gray-500">
+                      Logged in as <span className="font-semibold">{user?.name}</span>
+                    </div>
+                    <button
+                      onClick={() => {
+                        handleLogout();
+                        setIsMobileMenuOpen(false);
+                      }}
+                      className="w-full text-left px-3 py-3 rounded-lg text-red-600 hover:bg-red-50"
+                    >
+                      Logout
+                    </button>
+                  </div>
+                </>
+              ) : (
+                <div className="pt-4 mt-2 border-t border-gray-100">
+                  <Link
+                    to="/signup"
+                    className="block text-center px-4 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+                    onClick={() => setIsMobileMenuOpen(false)}
+                  >
+                    Sign Up
+                  </Link>
                 </div>
-                <div className="text-center p-2">
-                  <Shield className="w-5 h-5 text-green-600 mx-auto mb-1" />
-                  <p className="text-xs text-gray-600">Secure</p>
-                </div>
-                <div className="text-center p-2">
-                  <MapPin className="w-5 h-5 text-purple-600 mx-auto mb-1" />
-                  <p className="text-xs text-gray-600">Real-time</p>
-                </div>
-              </div>
+              )}
             </div>
           </div>
         )}
       </nav>
     </header>
   );
-};
-
-export default Header;
+}
