@@ -1,4 +1,6 @@
+// src/App.tsx
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import Header from './components/layout/Header';
 import Footer from './components/layout/Footer';
 import Home from './pages/homePage/Home';
@@ -15,6 +17,7 @@ function App() {
   return (
     <Router>
       <div className="min-h-screen flex flex-col bg-gray-50">
+        <Toaster position="top-center" />
         <Header />
         <main className="flex-grow">
           <Routes>
