@@ -1,12 +1,22 @@
 // src/services/authService.ts
 import { get, post, put } from './api';
 import { API_ENDPOINTS } from '../config/endpoints';
+import type { 
+  ApiResponse, 
+  AuthResponseData, 
+  User, 
+  LoginCredentials, 
+  RegisterData
+} from './types';
 
 export const authService = {
-  // Register new user
-  register: async (data: { name: string; email: string; phone?: string; password: string }) => {
+  register: async (data: RegisterData): Promise<ApiResponse<AuthResponseData>> => {
     try {
-      const response = await post(API_ENDPOINTS.AUTH.REGISTER, data, false);
+      const response = await post<ApiResponse<AuthResponseData>>(
+        API_ENDPOINTS.AUTH.REGISTER,
+        data,
+        false
+      );
       
       if (response.data?.token && response.data?.user) {
         localStorage.setItem('token', response.data.token);
@@ -15,15 +25,21 @@ export const authService = {
       
       return response;
     } catch (error) {
-      // ✅ Preserve the original error cause
-      throw new Error(error instanceof Error ? error.message : 'Registration failed', { cause: error });
+      // ✅ Fix: preserve the original error with cause
+      throw new Error(
+        error instanceof Error ? error.message : 'Registration failed',
+        { cause: error }
+      );
     }
   },
 
-  // Login user
-  login: async (credentials: { email: string; password: string }) => {
+  login: async (credentials: LoginCredentials): Promise<ApiResponse<AuthResponseData>> => {
     try {
-      const response = await post(API_ENDPOINTS.AUTH.LOGIN, credentials, false);
+      const response = await post<ApiResponse<AuthResponseData>>(
+        API_ENDPOINTS.AUTH.LOGIN,
+        credentials,
+        false
+      );
       
       if (response.data?.token && response.data?.user) {
         localStorage.setItem('token', response.data.token);
@@ -32,52 +48,64 @@ export const authService = {
       
       return response;
     } catch (error) {
-      // ✅ Preserve the original error cause
-      throw new Error(error instanceof Error ? error.message : 'Login failed', { cause: error });
+      // ✅ Fix: preserve the original error with cause
+      throw new Error(
+        error instanceof Error ? error.message : 'Login failed',
+        { cause: error }
+      );
     }
   },
 
-  // Get user profile
-  getProfile: async () => {
+  getProfile: async (): Promise<ApiResponse<User>> => {
     try {
-      const response = await get(API_ENDPOINTS.AUTH.PROFILE, true);
-      return response.data || response;
-    } catch (error) {
-      // ✅ Preserve the original error cause
-      throw new Error(error instanceof Error ? error.message : 'Failed to load profile', { cause: error });
-    }
-  },
-
-  // Change password
-  changePassword: async (currentPassword: string, newPassword: string) => {
-    try {
-      const response = await put(API_ENDPOINTS.AUTH.CHANGE_PASSWORD, { currentPassword, newPassword }, true);
+      const response = await get<ApiResponse<User>>(API_ENDPOINTS.AUTH.PROFILE, true);
       return response;
     } catch (error) {
-      // ✅ Preserve the original error cause
-      throw new Error(error instanceof Error ? error.message : 'Failed to change password', { cause: error });
+      // ✅ Fix: preserve the original error with cause
+      throw new Error(
+        error instanceof Error ? error.message : 'Failed to load profile',
+        { cause: error }
+      );
     }
   },
 
-  // Logout
-  logout: () => {
+  changePassword: async (currentPassword: string, newPassword: string): Promise<ApiResponse<{ message: string }>> => {
+    try {
+      const response = await put<ApiResponse<{ message: string }>>(
+        API_ENDPOINTS.AUTH.CHANGE_PASSWORD,
+        { currentPassword, newPassword },
+        true
+      );
+      return response;
+    } catch (error) {
+      // ✅ Fix: preserve the original error with cause
+      throw new Error(
+        error instanceof Error ? error.message : 'Failed to change password',
+        { cause: error }
+      );
+    }
+  },
+
+  logout: (): void => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
   },
 
-  // Check if logged in
-  isAuthenticated: () => {
+  isAuthenticated: (): boolean => {
     return !!localStorage.getItem('token');
   },
 
-  // Get current user
-  getCurrentUser: () => {
+  getCurrentUser: (): User | null => {
     const user = localStorage.getItem('user');
-    return user ? JSON.parse(user) : null;
+    if (!user) return null;
+    try {
+      return JSON.parse(user);
+    } catch {
+      return null;
+    }
   },
 
-  // Get token
-  getToken: () => {
+  getToken: (): string | null => {
     return localStorage.getItem('token');
   },
 };

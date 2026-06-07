@@ -1,27 +1,40 @@
 // src/services/api.ts
 import { API_BASE_URL } from '../config/endpoints';
 
-// Helper to get auth headers
-const getAuthHeaders = () => {
+const getAuthHeaders = (): Record<string, string> => {
   const token = localStorage.getItem('token');
+  const headers: Record<string, string> = {
+    'Content-Type': 'application/json',
+  };
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+  return headers;
+};
+
+const getPublicHeaders = (): Record<string, string> => {
   return {
     'Content-Type': 'application/json',
-    ...(token && { 'Authorization': `Bearer ${token}` })
   };
 };
 
-// GET request
-export const get = async (endpoint: string, requiresAuth: boolean = true) => {
-  const headers = requiresAuth ? getAuthHeaders() : { 'Content-Type': 'application/json' };
+export const get = async <T>(
+  endpoint: string, 
+  requiresAuth: boolean = true
+): Promise<T> => {
+  const headers = requiresAuth ? getAuthHeaders() : getPublicHeaders();
   const response = await fetch(`${API_BASE_URL}${endpoint}`, { headers });
   const data = await response.json();
   if (!response.ok) throw new Error(data.message || 'Request failed');
-  return data;
+  return data as T;
 };
 
-// POST request
-export const post = async (endpoint: string, body: object, requiresAuth: boolean = true) => {
-  const headers = requiresAuth ? getAuthHeaders() : { 'Content-Type': 'application/json' };
+export const post = async <T>(
+  endpoint: string, 
+  body: object | null, 
+  requiresAuth: boolean = true
+): Promise<T> => {
+  const headers = requiresAuth ? getAuthHeaders() : getPublicHeaders();
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: 'POST',
     headers,
@@ -29,12 +42,15 @@ export const post = async (endpoint: string, body: object, requiresAuth: boolean
   });
   const data = await response.json();
   if (!response.ok) throw new Error(data.message || 'Request failed');
-  return data;
+  return data as T;
 };
 
-// PUT request
-export const put = async (endpoint: string, body: object, requiresAuth: boolean = true) => {
-  const headers = requiresAuth ? getAuthHeaders() : { 'Content-Type': 'application/json' };
+export const put = async <T>(
+  endpoint: string, 
+  body: object | null, 
+  requiresAuth: boolean = true
+): Promise<T> => {
+  const headers = requiresAuth ? getAuthHeaders() : getPublicHeaders();
   const response = await fetch(`${API_BASE_URL}${endpoint}`, {
     method: 'PUT',
     headers,
@@ -42,14 +58,32 @@ export const put = async (endpoint: string, body: object, requiresAuth: boolean 
   });
   const data = await response.json();
   if (!response.ok) throw new Error(data.message || 'Request failed');
-  return data;
+  return data as T;
 };
 
-// DELETE request
-export const del = async (endpoint: string, requiresAuth: boolean = true) => {
-  const headers = requiresAuth ? getAuthHeaders() : { 'Content-Type': 'application/json' };
+export const patch = async <T>(
+  endpoint: string, 
+  body: object | null, 
+  requiresAuth: boolean = true
+): Promise<T> => {
+  const headers = requiresAuth ? getAuthHeaders() : getPublicHeaders();
+  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
+    method: 'PATCH',
+    headers,
+    body: JSON.stringify(body),
+  });
+  const data = await response.json();
+  if (!response.ok) throw new Error(data.message || 'Request failed');
+  return data as T;
+};
+
+export const del = async <T>(
+  endpoint: string, 
+  requiresAuth: boolean = true
+): Promise<T> => {
+  const headers = requiresAuth ? getAuthHeaders() : getPublicHeaders();
   const response = await fetch(`${API_BASE_URL}${endpoint}`, { method: 'DELETE', headers });
   const data = await response.json();
   if (!response.ok) throw new Error(data.message || 'Request failed');
-  return data;
+  return data as T;
 };
