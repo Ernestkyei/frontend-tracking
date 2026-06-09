@@ -16,8 +16,12 @@ import {
   Search,
   Check,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 import { Input } from '@/components/ui/input';
+
+// Import API service
+import { shipmentService } from '@/Services/shipmentService';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -49,80 +53,8 @@ interface Shipment {
   locationUpdates: LocationUpdate[];
 }
 
-// ─── Mock data ────────────────────────────────────────────────────────────────
-
-const mockShipmentData: Record<string, Shipment> = {
-  'TRK-2026-001': {
-    id: '1',
-    trackingNumber: 'TRK-2026-001',
-    status: 'IN_TRANSIT',
-    currentLocation: 'Tema Motorway, Accra',
-    pickupAddress: 'Accra Mall, Spintex Road, Accra',
-    deliveryAddress: 'Tema Community 1, Site 20, Tema',
-    expectedDelivery: '2026-03-25T14:00:00',
-    createdAt: '2026-03-20T10:30:00',
-    packageType: 'Electronics',
-    weight: 2.5,
-    description: 'MacBook Pro 14-inch, in original box. Fragile — handle with care.',
-    recipientName: 'John Mensah',
-    recipientPhone: '+233 24 123 4567',
-    senderName: 'Mary Owusu',
-    senderPhone: '+233 24 765 4321',
-    locationUpdates: [
-      { id: '1', location: 'Accra Mall, Spintex Road', status: 'PICKED_UP', note: 'Package picked up from sender', timestamp: '2026-03-20T12:00:00' },
-      { id: '2', location: 'Tema Sorting Center', status: 'IN_TRANSIT', note: 'Package arrived at sorting facility', timestamp: '2026-03-21T08:30:00' },
-      { id: '3', location: 'Tema Motorway', status: 'IN_TRANSIT', note: 'Out for delivery', timestamp: '2026-03-25T09:00:00' },
-    ],
-  },
-  'TRK-2026-002': {
-    id: '2',
-    trackingNumber: 'TRK-2026-002',
-    status: 'DELIVERED',
-    currentLocation: 'Takoradi Market Circle',
-    pickupAddress: 'Kumasi Central Market, Kumasi',
-    deliveryAddress: 'Takoradi Market Circle, Takoradi',
-    expectedDelivery: '2026-03-18T16:00:00',
-    actualDelivery: '2026-03-18T15:30:00',
-    createdAt: '2026-03-15T09:00:00',
-    packageType: 'Clothing',
-    weight: 1.5,
-    description: 'Traditional fabrics — 6 yards. Well packed in plastic bag.',
-    recipientName: 'Ama Serwaa',
-    recipientPhone: '+233 20 123 4567',
-    senderName: 'Kofi Asante',
-    senderPhone: '+233 24 765 4321',
-    locationUpdates: [
-      { id: '1', location: 'Kumasi Central Market', status: 'PICKED_UP', note: 'Package picked up from sender', timestamp: '2026-03-15T11:00:00' },
-      { id: '2', location: 'Kumasi Hub', status: 'IN_TRANSIT', note: 'Processed at sorting center', timestamp: '2026-03-16T10:00:00' },
-      { id: '3', location: 'Takoradi Distribution Center', status: 'IN_TRANSIT', note: 'Arrived at destination city', timestamp: '2026-03-17T14:00:00' },
-      { id: '4', location: 'Takoradi Market Circle', status: 'DELIVERED', note: 'Delivered to recipient. QR code scanned.', timestamp: '2026-03-18T15:30:00' },
-    ],
-  },
-  'TRK-2026-003': {
-    id: '3',
-    trackingNumber: 'TRK-2026-003',
-    status: 'PENDING',
-    currentLocation: 'Tema Depot',
-    pickupAddress: 'Tema Depot, Tema',
-    deliveryAddress: 'Achimota Retail Centre, Accra',
-    expectedDelivery: '2026-03-28T18:00:00',
-    createdAt: '2026-03-22T14:00:00',
-    packageType: 'Documents',
-    weight: 0.5,
-    description: 'Business contracts and legal documents',
-    recipientName: 'Kwame Addo',
-    recipientPhone: '+233 50 123 4567',
-    senderName: 'Abena Osei',
-    senderPhone: '+233 24 765 4321',
-    locationUpdates: [
-      { id: '1', location: 'Tema Depot', status: 'PENDING', note: 'Shipment created and pending driver assignment', timestamp: '2026-03-22T14:00:00' },
-    ],
-  },
-};
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
-// ✅ Fix 1: was JSX.Element — now React.ReactNode
 const STATUS_META: Record<string, { label: string; chip: string; dot: string; icon: React.ReactNode }> = {
   DELIVERED: {
     label: 'Delivered',
@@ -220,7 +152,6 @@ function TimelineStep({
 
 // ─── Info card ────────────────────────────────────────────────────────────────
 
-// ✅ Fix 2: was JSX.Element — now React.ReactNode
 function InfoCard({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
@@ -253,29 +184,67 @@ export default function Track() {
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
+  // ✅ REAL API CALL - Fetch shipment from backend
   const fetchShipment = useCallback(async (num: string) => {
     setLoading(true);
     setError(null);
-    setTimeout(() => {
-      const data = mockShipmentData[num];
-      if (data) { setShipment(data); } else { setShipment(null); setError('No shipment found with this tracking number.'); }
+    try {
+      const response = await shipmentService.trackShipment(num);
+      if (response.success && response.data) {
+        // Transform API data to match Shipment interface
+        const data = response.data;
+        const formattedShipment: Shipment = {
+          id: data.id,
+          trackingNumber: data.trackingNumber,
+          status: data.status,
+          currentLocation: data.currentLocation || data.pickupAddress,
+          pickupAddress: data.pickupAddress,
+          deliveryAddress: data.deliveryAddress,
+          expectedDelivery: data.expectedDelivery,
+          actualDelivery: data.actualDelivery,
+          createdAt: data.createdAt,
+          packageType: data.packageType,
+          weight: data.weight,
+          description: data.description || '',
+          recipientName: data.recipientName || '',
+          recipientPhone: data.recipientPhone || '',
+          senderName: data.senderName || '',
+          senderPhone: data.senderPhone || '',
+          locationUpdates: data.locationUpdates || [],
+        };
+        setShipment(formattedShipment);
+      } else {
+        setShipment(null);
+        setError(response.message || 'No shipment found with this tracking number.');
+      }
+    } catch (err) {
+      console.error('Error fetching shipment:', err);
+      setShipment(null);
+      setError('No shipment found with this tracking number.');
+    } finally {
       setLoading(false);
-    }, 500);
+    }
   }, []);
 
   useEffect(() => {
-    if (trackingNumber) fetchShipment(trackingNumber);
+    if (trackingNumber) {
+      fetchShipment(trackingNumber);
+    }
   }, [trackingNumber, fetchShipment]);
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    if (searchNumber.trim()) { navigate(`/track/${searchNumber.trim()}`); setSearchNumber(''); }
+    if (searchNumber.trim()) {
+      navigate(`/track/${searchNumber.trim()}`);
+      setSearchNumber('');
+    }
   };
 
   const handleCopy = () => {
     if (!shipment) return;
     navigator.clipboard.writeText(shipment.trackingNumber);
     setCopied(true);
+    toast.success('Tracking number copied!');
     setTimeout(() => setCopied(false), 2000);
   };
 
@@ -338,9 +307,7 @@ export default function Track() {
           </form>
           {!trackingNumber && (
             <p className="text-xs text-gray-400 mt-3">
-              Demo: try <button onClick={() => navigate('/track/TRK-2026-001')} className="underline hover:text-gray-600">TRK-2026-001</button>,{' '}
-              <button onClick={() => navigate('/track/TRK-2026-002')} className="underline hover:text-gray-600">TRK-2026-002</button>, or{' '}
-              <button onClick={() => navigate('/track/TRK-2026-003')} className="underline hover:text-gray-600">TRK-2026-003</button>
+              Enter any tracking number from your shipments
             </p>
           )}
         </div>

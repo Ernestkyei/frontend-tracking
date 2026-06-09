@@ -20,6 +20,7 @@ import {
   Phone,
   ArrowRight
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 // shadcn/ui imports
 import {
@@ -41,7 +42,9 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 
-// No alert-dialog import needed
+// Import API services
+import { shipmentService } from '@/Services/shipmentService';
+import { authService } from '@/Services/authService';
 
 interface Shipment {
   id: string;
@@ -75,107 +78,126 @@ export default function Dashboard() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [shipmentToDelete, setShipmentToDelete] = useState<Shipment | null>(null);
   const [copiedTracking, setCopiedTracking] = useState<string | null>(null);
-  const [shipments, setShipments] = useState<Shipment[]>([
-    {
-      id: '1',
-      trackingNumber: 'TRK-2026-001',
-      status: 'IN_TRANSIT',
-      pickupAddress: 'Accra Mall, Spintex Road',
-      deliveryAddress: 'Tema Community 1, Site 20',
-      expectedDelivery: '2026-03-25',
-      createdAt: '2026-03-20',
-      packageType: 'Electronics',
-      weight: 2.5,
-      description: 'MacBook Pro 14-inch, in original box',
-      recipientName: 'John Mensah',
-      recipientPhone: '+233 24 123 4567',
-      senderName: 'Mary Owusu',
-      senderPhone: '+233 24 765 4321'
-    },
-    {
-      id: '2',
-      trackingNumber: 'TRK-2026-002',
-      status: 'DELIVERED',
-      pickupAddress: 'Kumasi Central Market',
-      deliveryAddress: 'Takoradi Market Circle',
-      expectedDelivery: '2026-03-18',
-      createdAt: '2026-03-15',
-      packageType: 'Clothing',
-      weight: 1.5,
-      description: 'Traditional fabrics - 6 yards',
-      recipientName: 'Ama Serwaa',
-      recipientPhone: '+233 20 123 4567',
-      senderName: 'Kofi Asante',
-      senderPhone: '+233 24 765 4321'
-    },
-    {
-      id: '3',
-      trackingNumber: 'TRK-2026-003',
-      status: 'PENDING',
-      pickupAddress: 'Tema Depot',
-      deliveryAddress: 'Achimota Retail Centre',
-      expectedDelivery: '2026-03-28',
-      createdAt: '2026-03-22',
-      packageType: 'Documents',
-      weight: 0.5,
-      description: 'Business contracts and legal documents',
-      recipientName: 'Kwame Addo',
-      recipientPhone: '+233 50 123 4567',
-      senderName: 'Abena Osei',
-      senderPhone: '+233 24 765 4321'
-    },
-    {
-      id: '4',
-      trackingNumber: 'TRK-2026-004',
-      status: 'PICKED_UP',
-      pickupAddress: 'Madina Estate',
-      deliveryAddress: 'East Legon Hills',
-      expectedDelivery: '2026-03-26',
-      createdAt: '2026-03-23',
-      packageType: 'Food',
-      weight: 3.0,
-      description: 'Fresh organic vegetables and fruits',
-      recipientName: 'Esi Appiah',
-      recipientPhone: '+233 54 123 4567',
-      senderName: 'Nana Yaw',
-      senderPhone: '+233 24 765 4321'
-    },
-    {
-      id: '5',
-      trackingNumber: 'TRK-2026-005',
-      status: 'IN_TRANSIT',
-      pickupAddress: 'Osu, Oxford Street',
-      deliveryAddress: 'Dzorwulu, Accra',
-      expectedDelivery: '2026-03-27',
-      createdAt: '2026-03-24',
-      packageType: 'Electronics',
-      weight: 1.2,
-      description: 'Wireless headphones and accessories',
-      recipientName: 'Michael Tetteh',
-      recipientPhone: '+233 55 123 4567',
-      senderName: 'Sandra Boateng',
-      senderPhone: '+233 24 765 4321'
-    }
-  ]);
-
-  const [filteredShipments, setFilteredShipments] = useState<Shipment[]>(shipments);
+  const [shipments, setShipments] = useState<Shipment[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filteredShipments, setFilteredShipments] = useState<Shipment[]>([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
 
-  // Check auth
+  // ========== FUNCTIONS ==========
+
+  const loadUserData = async () => {
+    try {
+      const response = await authService.getProfile();
+      if (response.success && response.data) {
+        setUser(response.data);
+      }
+    } catch (error) {
+      console.error('Failed to load user:', error);
+    }
+  };
+
+  const loadShipments = async () => {
+    setLoading(true);
+    try {
+      const response = await shipmentService.getMyShipments();
+      if (response.success && response.data) {
+        const formattedShipments = response.data.map((shipment: any) => ({
+          id: shipment.id,
+          trackingNumber: shipment.trackingNumber,
+          status: shipment.status,
+          pickupAddress: shipment.pickupAddress,
+          deliveryAddress: shipment.deliveryAddress,
+          expectedDelivery: shipment.expectedDelivery?.split('T')[0] || '',
+          createdAt: shipment.createdAt?.split('T')[0] || '',
+          packageType: shipment.packageType,
+          weight: shipment.weight,
+          description: shipment.description,
+          recipientName: shipment.recipientName,
+          recipientPhone: shipment.recipientPhone,
+          senderName: shipment.senderName,
+          senderPhone: shipment.senderPhone,
+        }));
+        setShipments(formattedShipments);
+        setFilteredShipments(formattedShipments);
+      }
+    } catch (error) {
+      console.error('Failed to load shipments:', error);
+      toast.error('Failed to load shipments');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRowClick = (shipment: Shipment) => {
+    setSelectedShipment(shipment);
+    setShowDetailsModal(true);
+  };
+
+  const handleCopyTrackingNumber = (trackingNumber: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    navigator.clipboard.writeText(trackingNumber);
+    setCopiedTracking(trackingNumber);
+    setTimeout(() => setCopiedTracking(null), 2000);
+    toast.success('Tracking number copied!');
+  };
+
+  const handleDeleteClick = (shipment: Shipment, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setShipmentToDelete(shipment);
+    setShowDeleteConfirm(true);
+  };
+
+  const confirmDelete = () => {
+    if (shipmentToDelete) {
+      setShipments(shipments.filter(s => s.id !== shipmentToDelete.id));
+      setShowDeleteConfirm(false);
+      setShipmentToDelete(null);
+      toast.success('Shipment deleted successfully');
+    }
+  };
+
+  const getStatusColorClass = (status: string): string => {
+    switch (status) {
+      case 'DELIVERED':
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'IN_TRANSIT':
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'PICKED_UP':
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'PENDING':
+        return 'bg-amber-50 text-amber-700 border-amber-200';
+      default:
+        return 'bg-gray-50 text-gray-700 border-gray-200';
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'DELIVERED':
+        return <CheckCircle className="w-3.5 h-3.5" />;
+      case 'IN_TRANSIT':
+        return <Truck className="w-3.5 h-3.5" />;
+      case 'PICKED_UP':
+        return <Package className="w-3.5 h-3.5" />;
+      default:
+        return <Clock className="w-3.5 h-3.5" />;
+    }
+  };
+
+  // ========== EFFECTS ==========
+
+  // Check auth and load data
   useEffect(() => {
     const token = localStorage.getItem('token');
-    const userData = localStorage.getItem('user');
-    
-    if (!token || !userData) {
+    if (!token) {
       navigate('/auth');
       return;
     }
-    
-    const parsedUser = JSON.parse(userData);
-    setUser(parsedUser);
+    loadUserData();
+    loadShipments();
   }, [navigate]);
 
   // Filter shipments
@@ -197,63 +219,6 @@ export default function Dashboard() {
     setCurrentPage(1);
   }, [searchTerm, statusFilter, shipments]);
 
-  // Handle row click to show details
-  const handleRowClick = (shipment: Shipment) => {
-    setSelectedShipment(shipment);
-    setShowDetailsModal(true);
-  };
-
-  // Handle copy tracking number
-  const handleCopyTrackingNumber = (trackingNumber: string, e?: React.MouseEvent) => {
-    if (e) e.stopPropagation();
-    navigator.clipboard.writeText(trackingNumber);
-    setCopiedTracking(trackingNumber);
-    setTimeout(() => setCopiedTracking(null), 2000);
-  };
-
-  // Handle delete shipment
-  const handleDeleteClick = (shipment: Shipment, e: React.MouseEvent) => {
-    e.stopPropagation();
-    setShipmentToDelete(shipment);
-    setShowDeleteConfirm(true);
-  };
-
-  const confirmDelete = () => {
-    if (shipmentToDelete) {
-      setShipments(shipments.filter(s => s.id !== shipmentToDelete.id));
-      setShowDeleteConfirm(false);
-      setShipmentToDelete(null);
-    }
-  };
-
-  const getStatusColorClass = (status: string): string => {
-    switch (status) {
-      case 'DELIVERED':
-        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
-      case 'IN_TRANSIT':
-        return 'bg-blue-50 text-blue-700 border-blue-200';
-      case 'PICKED_UP':
-        return 'bg-purple-50 text-purple-700 border-purple-200';
-      case 'PENDING':
-        return 'bg-amber-50 text-amber-700 border-amber-200';
-      default:
-        return 'bg-gray-50 text-gray-700 border-gray-200';
-    }
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'DELIVERED':
-        return <CheckCircle className="w-3.5 h-3.5" />;
-      case 'IN_TRANSIT':
-        return <Truck className="w-3.5 h-3.5" />;
-      case 'PICKED_UP':
-        return <Package className="w-3.5 h-3.5" />;
-      default:
-        return <Clock className="w-3.5 h-3.5" />;
-    }
-  };
-
   // Pagination logic
   const totalPages = Math.ceil(filteredShipments.length / rowsPerPage);
   const startIndex = (currentPage - 1) * rowsPerPage;
@@ -266,11 +231,22 @@ export default function Dashboard() {
     pending: shipments.filter(s => s.status === 'PENDING').length,
   };
 
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading your shipments...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-600 mx-auto"></div>
           <p className="mt-4 text-gray-600">Loading...</p>
         </div>
       </div>
@@ -291,7 +267,7 @@ export default function Dashboard() {
             </div>
             <Button 
               onClick={() => navigate('/create-shipment')}
-              className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 shadow-lg hover:shadow-xl transition-all duration-300"
+              className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-lg hover:shadow-xl transition-all duration-300"
             >
               <Plus className="w-4 h-4 mr-2" />
               New Shipment
@@ -309,8 +285,8 @@ export default function Dashboard() {
                 <p className="text-gray-500 text-sm font-medium">Total Shipments</p>
                 <p className="text-3xl font-bold text-gray-900 mt-1">{stats.total}</p>
               </div>
-              <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center">
-                <Package className="w-6 h-6 text-blue-600" />
+              <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+                <Package className="w-6 h-6 text-emerald-600" />
               </div>
             </div>
           </div>
@@ -318,10 +294,10 @@ export default function Dashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-gray-500 text-sm font-medium">In Transit</p>
-                <p className="text-3xl font-bold text-blue-600 mt-1">{stats.inTransit}</p>
+                <p className="text-3xl font-bold text-emerald-600 mt-1">{stats.inTransit}</p>
               </div>
-              <div className="w-12 h-12 bg-blue-50 rounded-xl flex items-center justify-center">
-                <Truck className="w-6 h-6 text-blue-600" />
+              <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
+                <Truck className="w-6 h-6 text-emerald-600" />
               </div>
             </div>
           </div>
@@ -331,7 +307,7 @@ export default function Dashboard() {
                 <p className="text-gray-500 text-sm font-medium">Delivered</p>
                 <p className="text-3xl font-bold text-emerald-600 mt-1">{stats.delivered}</p>
               </div>
-              <div className="w-12 h-12 bg-emerald-50 rounded-xl flex items-center justify-center">
+              <div className="w-12 h-12 bg-emerald-100 rounded-xl flex items-center justify-center">
                 <CheckCircle className="w-6 h-6 text-emerald-600" />
               </div>
             </div>
@@ -365,7 +341,7 @@ export default function Dashboard() {
                     placeholder="Search tracking #..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9 w-64 border-gray-200 focus:border-blue-300"
+                    className="pl-9 w-64 border-gray-200 focus:border-emerald-300"
                   />
                 </div>
                 <Select value={statusFilter} onValueChange={setStatusFilter}>
@@ -388,7 +364,10 @@ export default function Dashboard() {
             <div className="p-12 text-center">
               <Package className="w-16 h-16 text-gray-300 mx-auto mb-4" />
               <h3 className="text-lg font-medium text-gray-900 mb-2">No shipments found</h3>
-              <p className="text-gray-500 mb-4">Try adjusting your search or filter</p>
+              <p className="text-gray-500 mb-4">Create your first shipment to get started</p>
+              <Button onClick={() => navigate('/create-shipment')} className="mt-4">
+                Create Shipment
+              </Button>
             </div>
           ) : (
             <>
@@ -417,7 +396,7 @@ export default function Dashboard() {
                         >
                           <button
                             onClick={() => handleCopyTrackingNumber(shipment.trackingNumber)}
-                            className="flex items-center gap-2 group/tracking hover:text-blue-600 transition-colors"
+                            className="flex items-center gap-2 group/tracking hover:text-emerald-600 transition-colors"
                           >
                             <span>{shipment.trackingNumber}</span>
                             {copiedTracking === shipment.trackingNumber ? (
@@ -459,7 +438,7 @@ export default function Dashboard() {
                               variant="ghost"
                               size="sm"
                               onClick={() => navigate(`/track/${shipment.trackingNumber}`)}
-                              className="h-8 w-8 p-0 text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                              className="h-8 w-8 p-0 text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50"
                               title="Track Shipment"
                             >
                               <Eye className="w-4 h-4" />
@@ -573,7 +552,7 @@ export default function Dashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-gray-50 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-3">
-                    <Package className="w-4 h-4 text-blue-600" />
+                    <Package className="w-4 h-4 text-emerald-600" />
                     <h3 className="font-semibold text-gray-900">Package Details</h3>
                   </div>
                   <div className="space-y-2 text-sm">
@@ -596,7 +575,7 @@ export default function Dashboard() {
 
                 <div className="bg-gray-50 rounded-xl p-4">
                   <div className="flex items-center gap-2 mb-3">
-                    <Calendar className="w-4 h-4 text-blue-600" />
+                    <Calendar className="w-4 h-4 text-emerald-600" />
                     <h3 className="font-semibold text-gray-900">Delivery Timeline</h3>
                   </div>
                   <div className="space-y-2 text-sm">
@@ -676,7 +655,7 @@ export default function Dashboard() {
                     setShowDetailsModal(false);
                     navigate(`/track/${selectedShipment.trackingNumber}`);
                   }}
-                  className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800"
+                  className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700"
                 >
                   <Eye className="w-4 h-4 mr-2" />
                   Track Shipment

@@ -68,23 +68,15 @@ export interface LocationUpdate {
 }
 
 export interface CreateShipmentData {
-  senderName: string;
-  senderPhone: string;
-  senderEmail?: string;
+  
+  customerName: string;      
+  customerEmail: string;     
   pickupAddress: string;
-  pickupRegion?: string;
-  preferredPickupTime?: string;
-  recipientName: string;
-  recipientPhone: string;
-  recipientEmail?: string;
   deliveryAddress: string;
-  deliveryRegion: string;
-  landmark?: string;
-  packageType: string;
-  estimatedWeight: string;
-  estimatedValue?: string;
-  packageDescription: string;
-  specialInstructions?: string;
-  deliveryUrgency: string;
-  additionalNotes?: string;
+  customerPhone?: string;    
+  recipientPhone?: string;
+  description?: string;
+  weight?: number;
+  price?: number;
+  expectedDelivery?: string;
 }

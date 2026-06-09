@@ -1,3 +1,4 @@
+// pages/dashboard/createShipment/CreateShipment.tsx
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -13,6 +14,7 @@ import {
   ArrowUpRight,
   AlertCircle,
 } from 'lucide-react';
+import toast from 'react-hot-toast';
 
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,6 +26,10 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
+
+// Import API service
+import { shipmentService } from '@/Services/shipmentService';
+import type { CreateShipmentData } from '@/Services/types';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -124,15 +130,12 @@ function StepBar({ current }: { current: Step }) {
         return (
           <div key={step.key} className="flex items-center">
             <div className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-medium transition-all ${active
-                ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white'
+                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white'
                 : done
                   ? 'text-emerald-600'
                   : 'text-gray-400'
               }`}>
-              {done
-                ? <CheckCircle className="w-3.5 h-3.5" />
-                : <Icon className="w-3.5 h-3.5" />
-              }
+              {done ? <CheckCircle className="w-3.5 h-3.5" /> : <Icon className="w-3.5 h-3.5" />}
               {step.label}
             </div>
             {i < STEPS.length - 1 && (
@@ -175,18 +178,12 @@ function SuccessScreen({ tracking, onNew }: { tracking: string; onNew: () => voi
         </div>
 
         <div className="flex gap-3">
-          <Button
-            onClick={() => navigate(`/track/${tracking}`)}
-            className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-xl h-10 text-sm font-medium inline-flex items-center justify-center gap-2"
-          >
-            <Package className="w-4 h-4" />
+          <Button onClick={() => navigate(`/track/${tracking}`)} className="flex-1 bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700">
+            <Package className="w-4 h-4 mr-2" />
             Track shipment
             <ArrowUpRight className="w-3.5 h-3.5 opacity-60" />
           </Button>
-          <button
-            onClick={onNew}
-            className="flex-1 h-10 text-sm font-medium rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 transition-colors"
-          >
+          <button onClick={onNew} className="flex-1 h-10 text-sm font-medium rounded-xl border border-gray-200 bg-white hover:bg-gray-50">
             New shipment
           </button>
         </div>
@@ -206,17 +203,15 @@ function Section({ title, subtitle, icon: Icon, children }: {
   return (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
       <div className="px-6 py-5 border-b border-gray-100 flex items-start gap-3">
-        <div className="w-9 h-9 rounded-xl bg-gradient-to-r from-blue-50 to-blue-100 flex items-center justify-center shrink-0">
-          <Icon className="w-4.5 h-4.5 text-blue-600" />
+        <div className="w-9 h-9 rounded-xl bg-gradient-to-r from-emerald-50 to-teal-50 flex items-center justify-center shrink-0">
+          <Icon className="w-4.5 h-4.5 text-emerald-600" />
         </div>
         <div>
           <h2 className="text-sm font-semibold text-gray-900">{title}</h2>
           <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>
         </div>
       </div>
-      <div className="p-6">
-        {children}
-      </div>
+      <div className="p-6">{children}</div>
     </div>
   );
 }
@@ -248,6 +243,7 @@ export default function CreateShipment() {
       if (!formData.senderName) newErrors.senderName = 'Required';
       if (!formData.senderPhone) newErrors.senderPhone = 'Required';
       if (!formData.pickupAddress) newErrors.pickupAddress = 'Required';
+      if (!formData.senderEmail) newErrors.senderEmail = 'Required';
     } else if (step === 1) {
       if (!formData.recipientName) newErrors.recipientName = 'Required';
       if (!formData.recipientPhone) newErrors.recipientPhone = 'Required';
@@ -265,48 +261,42 @@ export default function CreateShipment() {
   const next = () => { if (validateStep()) setStep(s => (s + 1) as Step); };
   const back = () => setStep(s => (s - 1) as Step);
 
-  // MOCK SUBMIT - No API call, just simulate success
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateStep()) return;
     
     setIsLoading(true);
+    const loadingToast = toast.loading('Creating your shipment...');
     
-    // Simulate network delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // Generate mock tracking number
-    const mockTrackingNumber = `TRK-${Date.now()}`;
-    setTrackingNumber(mockTrackingNumber);
-    
-    // Save to localStorage for dashboard to read
-    const newShipment = {
-      id: Date.now().toString(),
-      trackingNumber: mockTrackingNumber,
-      status: 'PENDING',
+    // Map form data to backend expectations
+    const shipmentData: CreateShipmentData = {
+      customerName: formData.senderName,
+      customerEmail: formData.senderEmail,
       pickupAddress: formData.pickupAddress,
       deliveryAddress: formData.deliveryAddress,
-      expectedDelivery: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-      createdAt: new Date().toISOString().split('T')[0],
-      packageType: formData.packageType,
-      weight: formData.estimatedWeight === 'under-1kg' ? 0.5 : 
-              formData.estimatedWeight === '1-5kg' ? 2.5 :
-              formData.estimatedWeight === '5-10kg' ? 7.5 :
-              formData.estimatedWeight === '10-20kg' ? 15 : 25,
-      description: formData.packageDescription,
-      recipientName: formData.recipientName,
-      recipientPhone: formData.recipientPhone,
-      senderName: formData.senderName,
-      senderPhone: formData.senderPhone
+      customerPhone: formData.senderPhone || undefined,
+      recipientPhone: formData.recipientPhone || undefined,
+      description: formData.packageDescription || undefined,
+      weight: formData.estimatedWeight ? parseFloat(formData.estimatedWeight) : undefined,
     };
-    
-    // Save to localStorage
-    const existingShipments = JSON.parse(localStorage.getItem('shipments') || '[]');
-    existingShipments.unshift(newShipment);
-    localStorage.setItem('shipments', JSON.stringify(existingShipments));
-    
-    setIsLoading(false);
-    setSuccess(true);
+
+    try {
+      const response = await shipmentService.createShipment(shipmentData);
+      toast.dismiss(loadingToast);
+      
+      if (response.success && response.data?.trackingNumber) {
+        setTrackingNumber(response.data.trackingNumber);
+        toast.success(`Shipment created! Tracking #: ${response.data.trackingNumber}`);
+        setSuccess(true);
+      } else {
+        toast.error(response.message || 'Failed to create shipment');
+      }
+    } catch (error) {
+      toast.dismiss(loadingToast);
+      toast.error(error instanceof Error ? error.message : 'Failed to create shipment');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   if (success) {
@@ -318,10 +308,10 @@ export default function CreateShipment() {
   }
 
   const inputClass = (field: keyof FormData) =>
-    `h-10 rounded-xl text-sm border-gray-200 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 ${errors[field] ? 'border-red-300 focus:ring-red-400 focus:border-red-400' : ''}`;
+    `h-10 rounded-xl text-sm border-gray-200 focus:ring-1 focus:ring-emerald-500 focus:border-emerald-500 ${errors[field] ? 'border-red-300 focus:ring-red-400 focus:border-red-400' : ''}`;
 
   const selectClass = (field: keyof FormData) =>
-    `h-10 rounded-xl text-sm border-gray-200 focus:ring-1 focus:ring-blue-500 ${errors[field] ? 'border-red-300' : ''}`;
+    `h-10 rounded-xl text-sm border-gray-200 focus:ring-1 focus:ring-emerald-500 ${errors[field] ? 'border-red-300' : ''}`;
 
   return (
     <div className="min-h-screen bg-[#F7F7F5] font-sans">
@@ -329,10 +319,7 @@ export default function CreateShipment() {
       <header className="bg-white border-b border-gray-100 sticky top-0 z-30">
         <div className="max-w-3xl mx-auto px-6 h-16 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <button
-              onClick={() => navigate('/dashboard')}
-              className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50 transition-colors"
-            >
+            <button onClick={() => navigate('/dashboard')} className="w-8 h-8 rounded-lg border border-gray-200 flex items-center justify-center text-gray-500 hover:bg-gray-50">
               <ArrowLeft className="w-4 h-4" />
             </button>
             <div>
@@ -344,10 +331,7 @@ export default function CreateShipment() {
           <div className="flex items-center gap-3">
             <div className="hidden sm:flex items-center gap-2">
               <div className="w-24 h-1.5 bg-gray-100 rounded-full overflow-hidden">
-                <div
-                  className="h-full bg-gradient-to-r from-blue-600 to-blue-700 rounded-full transition-all duration-500"
-                  style={{ width: `${progress}%` }}
-                />
+                <div className="h-full bg-gradient-to-r from-emerald-600 to-teal-600 rounded-full transition-all duration-500" style={{ width: `${progress}%` }} />
               </div>
               <span className="text-xs text-gray-400 w-7 text-right">{progress}%</span>
             </div>
@@ -358,8 +342,6 @@ export default function CreateShipment() {
             </div>
           </div>
         </div>
-
-        {/* Step bar */}
         <div className="max-w-3xl mx-auto px-6 pb-3">
           <StepBar current={step} />
         </div>
@@ -368,42 +350,22 @@ export default function CreateShipment() {
       {/* Form */}
       <main className="max-w-3xl mx-auto px-6 py-10">
         <form onSubmit={handleSubmit} noValidate>
-
-          {/* ── STEP 0: Sender ─────────────────────────────────────── */}
+          {/* STEP 0: Sender */}
           {step === 0 && (
             <Section title="Sender information" subtitle="Who is sending this package?" icon={Building2}>
               <div className="grid grid-cols-2 gap-x-5 gap-y-5">
                 <Field label="Full name" required>
-                  <Input
-                    name="senderName"
-                    placeholder="e.g. Mary Owusu"
-                    value={formData.senderName}
-                    onChange={handleChange}
-                    className={inputClass('senderName')}
-                  />
+                  <Input name="senderName" placeholder="e.g. Mary Owusu" value={formData.senderName} onChange={handleChange} className={inputClass('senderName')} />
                   <ErrorMsg field="senderName" errors={errors} />
                 </Field>
 
                 <Field label="Phone number" required>
-                  <Input
-                    name="senderPhone"
-                    placeholder="+233 24 000 0000"
-                    value={formData.senderPhone}
-                    onChange={handleChange}
-                    className={inputClass('senderPhone')}
-                  />
+                  <Input name="senderPhone" placeholder="+233 24 000 0000" value={formData.senderPhone} onChange={handleChange} className={inputClass('senderPhone')} />
                   <ErrorMsg field="senderPhone" errors={errors} />
                 </Field>
 
-                <Field label="Email address">
-                  <Input
-                    name="senderEmail"
-                    type="email"
-                    placeholder="mary@example.com"
-                    value={formData.senderEmail}
-                    onChange={handleChange}
-                    className={inputClass('senderEmail')}
-                  />
+                <Field label="Email address" required>
+                  <Input name="senderEmail" type="email" placeholder="mary@example.com" value={formData.senderEmail} onChange={handleChange} className={inputClass('senderEmail')} required />
                 </Field>
 
                 <Field label="Region">
@@ -412,21 +374,13 @@ export default function CreateShipment() {
                       <SelectValue placeholder="Select region" />
                     </SelectTrigger>
                     <SelectContent>
-                      {GHANA_REGIONS.map(r => (
-                        <SelectItem key={r} value={r.toLowerCase().replace(/ /g, '-')}>{r}</SelectItem>
-                      ))}
+                      {GHANA_REGIONS.map(r => <SelectItem key={r} value={r.toLowerCase().replace(/ /g, '-')}>{r}</SelectItem>)}
                     </SelectContent>
                   </Select>
                 </Field>
 
                 <Field label="Pickup address" required col2>
-                  <Input
-                    name="pickupAddress"
-                    placeholder="Street name, area, city"
-                    value={formData.pickupAddress}
-                    onChange={handleChange}
-                    className={inputClass('pickupAddress')}
-                  />
+                  <Input name="pickupAddress" placeholder="Street name, area, city" value={formData.pickupAddress} onChange={handleChange} className={inputClass('pickupAddress')} />
                   <ErrorMsg field="pickupAddress" errors={errors} />
                 </Field>
 
@@ -446,41 +400,22 @@ export default function CreateShipment() {
             </Section>
           )}
 
-          {/* ── STEP 1: Recipient ──────────────────────────────────── */}
+          {/* STEP 1: Recipient */}
           {step === 1 && (
             <Section title="Recipient information" subtitle="Who will receive this package?" icon={Home}>
               <div className="grid grid-cols-2 gap-x-5 gap-y-5">
                 <Field label="Full name" required>
-                  <Input
-                    name="recipientName"
-                    placeholder="e.g. John Mensah"
-                    value={formData.recipientName}
-                    onChange={handleChange}
-                    className={inputClass('recipientName')}
-                  />
+                  <Input name="recipientName" placeholder="e.g. John Mensah" value={formData.recipientName} onChange={handleChange} className={inputClass('recipientName')} />
                   <ErrorMsg field="recipientName" errors={errors} />
                 </Field>
 
                 <Field label="Phone number" required>
-                  <Input
-                    name="recipientPhone"
-                    placeholder="+233 20 000 0000"
-                    value={formData.recipientPhone}
-                    onChange={handleChange}
-                    className={inputClass('recipientPhone')}
-                  />
+                  <Input name="recipientPhone" placeholder="+233 20 000 0000" value={formData.recipientPhone} onChange={handleChange} className={inputClass('recipientPhone')} />
                   <ErrorMsg field="recipientPhone" errors={errors} />
                 </Field>
 
                 <Field label="Email address">
-                  <Input
-                    name="recipientEmail"
-                    type="email"
-                    placeholder="john@example.com"
-                    value={formData.recipientEmail}
-                    onChange={handleChange}
-                    className={inputClass('recipientEmail')}
-                  />
+                  <Input name="recipientEmail" type="email" placeholder="john@example.com" value={formData.recipientEmail} onChange={handleChange} className={inputClass('recipientEmail')} />
                 </Field>
 
                 <Field label="Region" required>
@@ -489,39 +424,25 @@ export default function CreateShipment() {
                       <SelectValue placeholder="Select region" />
                     </SelectTrigger>
                     <SelectContent>
-                      {GHANA_REGIONS.map(r => (
-                        <SelectItem key={r} value={r.toLowerCase().replace(/ /g, '-')}>{r}</SelectItem>
-                      ))}
+                      {GHANA_REGIONS.map(r => <SelectItem key={r} value={r.toLowerCase().replace(/ /g, '-')}>{r}</SelectItem>)}
                     </SelectContent>
                   </Select>
                   <ErrorMsg field="deliveryRegion" errors={errors} />
                 </Field>
 
                 <Field label="Delivery address" required col2>
-                  <Input
-                    name="deliveryAddress"
-                    placeholder="Street name, area, city"
-                    value={formData.deliveryAddress}
-                    onChange={handleChange}
-                    className={inputClass('deliveryAddress')}
-                  />
+                  <Input name="deliveryAddress" placeholder="Street name, area, city" value={formData.deliveryAddress} onChange={handleChange} className={inputClass('deliveryAddress')} />
                   <ErrorMsg field="deliveryAddress" errors={errors} />
                 </Field>
 
                 <Field label="Landmark" hint="Helps the rider locate the address faster">
-                  <Input
-                    name="landmark"
-                    placeholder="Near church, school, filling station…"
-                    value={formData.landmark}
-                    onChange={handleChange}
-                    className={inputClass('landmark')}
-                  />
+                  <Input name="landmark" placeholder="Near church, school, filling station…" value={formData.landmark} onChange={handleChange} className={inputClass('landmark')} />
                 </Field>
               </div>
             </Section>
           )}
 
-          {/* ── STEP 2: Package ───────────────────────────────────── */}
+          {/* STEP 2: Package */}
           {step === 2 && (
             <Section title="Package details" subtitle="Tell us what you're sending" icon={Package}>
               <div className="grid grid-cols-2 gap-x-5 gap-y-5">
@@ -587,70 +508,37 @@ export default function CreateShipment() {
                 </Field>
 
                 <Field label="Package description" required col2>
-                  <Textarea
-                    name="packageDescription"
-                    placeholder="Describe the contents — e.g. MacBook Pro in original box, 3 fabric rolls…"
-                    rows={3}
-                    value={formData.packageDescription}
-                    onChange={handleChange}
-                    className={`rounded-xl text-sm border-gray-200 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none ${errors.packageDescription ? 'border-red-300' : ''}`}
-                  />
+                  <Textarea name="packageDescription" placeholder="Describe the contents..." rows={3} value={formData.packageDescription} onChange={handleChange} className={`rounded-xl text-sm border-gray-200 focus:ring-1 focus:ring-emerald-500 resize-none ${errors.packageDescription ? 'border-red-300' : ''}`} />
                   <ErrorMsg field="packageDescription" errors={errors} />
                 </Field>
 
                 <Field label="Special handling instructions" col2>
-                  <Textarea
-                    name="specialInstructions"
-                    placeholder="e.g. Fragile, keep upright, do not stack"
-                    rows={2}
-                    value={formData.specialInstructions}
-                    onChange={handleChange}
-                    className="rounded-xl text-sm border-gray-200 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                  />
+                  <Textarea name="specialInstructions" placeholder="e.g. Fragile, keep upright..." rows={2} value={formData.specialInstructions} onChange={handleChange} className="rounded-xl text-sm border-gray-200 focus:ring-1 focus:ring-emerald-500 resize-none" />
                 </Field>
 
                 <Field label="Additional notes" col2>
-                  <Textarea
-                    name="additionalNotes"
-                    placeholder="e.g. Gate code is 1234, call before arrival"
-                    rows={2}
-                    value={formData.additionalNotes}
-                    onChange={handleChange}
-                    className="rounded-xl text-sm border-gray-200 focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                  />
+                  <Textarea name="additionalNotes" placeholder="Gate code, call before arrival, etc." rows={2} value={formData.additionalNotes} onChange={handleChange} className="rounded-xl text-sm border-gray-200 focus:ring-1 focus:ring-emerald-500 resize-none" />
                 </Field>
               </div>
             </Section>
           )}
 
-          {/* ── Navigation ─────────────────────────────────────────── */}
+          {/* Navigation */}
           <div className={`flex mt-6 ${step > 0 ? 'justify-between' : 'justify-end'}`}>
             {step > 0 && (
-              <button
-                type="button"
-                onClick={back}
-                className="h-10 px-5 text-sm font-medium rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 inline-flex items-center gap-2 transition-colors"
-              >
+              <button type="button" onClick={back} className="h-10 px-5 text-sm font-medium rounded-xl border border-gray-200 bg-white hover:bg-gray-50 text-gray-700 inline-flex items-center gap-2">
                 <ChevronLeft className="w-4 h-4" />
                 Back
               </button>
             )}
 
             {step < 2 ? (
-              <button
-                type="button"
-                onClick={next}
-                className="h-10 px-5 text-sm font-medium rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white inline-flex items-center gap-2 transition-all shadow-sm"
-              >
+              <button type="button" onClick={next} className="h-10 px-5 text-sm font-medium rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white inline-flex items-center gap-2 shadow-sm">
                 Continue
                 <ChevronRight className="w-4 h-4" />
               </button>
             ) : (
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="h-10 px-6 text-sm font-medium rounded-xl bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 disabled:opacity-60 text-white inline-flex items-center gap-2 transition-all shadow-sm min-w-36 justify-center"
-              >
+              <button type="submit" disabled={isLoading} className="h-10 px-6 text-sm font-medium rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 disabled:opacity-60 text-white inline-flex items-center gap-2 shadow-sm min-w-36 justify-center">
                 {isLoading ? (
                   <>
                     <div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />

@@ -11,9 +11,10 @@ export const API_ENDPOINTS = {
     CHANGE_PASSWORD: '/auth/change-password',
   },
   TRACKING: {
-    TRACK: (trackingNumber: string) => `/track/${trackingNumber}`,
-    SCAN: (trackingNumber: string) => `/scan/${trackingNumber}`,
-    CREATE_SHIPMENT: '/shipments',
-    MY_SHIPMENTS: '/my-shipments',
+
+    TRACK: (trackingNumber: string) => `/tracking/track/${trackingNumber}`,
+    SCAN: (trackingNumber: string) => `/tracking/scan/${trackingNumber}`,
+    CREATE_SHIPMENT: '/tracking/shipments',
+    MY_SHIPMENTS: '/tracking/my-shipments',
   },
 };

@@ -12,7 +12,7 @@ export default function About() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-gray-50 to-white">
       {/* Hero Section */}
-      <section className="relative bg-gradient-to-r from-blue-600 to-blue-800 text-white py-24">
+      <section className="relative bg-gradient-to-r from-emerald-800 to-teal-800 text-white py-24">
         <div className="absolute inset-0 bg-black/20"></div>
         <div className="relative max-w-7xl mx-auto px-4 text-center">
           <div className="flex justify-center mb-6">
@@ -46,9 +46,9 @@ export default function About() {
                 recipient's side — not the driver's.
               </p>
             </div>
-            <div className="bg-blue-50 rounded-2xl p-8 border border-blue-100">
+            <div className="bg-emerald-50 rounded-2xl p-8 border border-emerald-100">
               <div className="flex items-start gap-4">
-                <QrCode className="w-12 h-12 text-blue-600 flex-shrink-0" />
+                <QrCode className="w-12 h-12 text-emerald-700 flex-shrink-0" />
                 <div>
                   <h3 className="text-xl font-bold text-gray-900 mb-2">
                     QR Code = Proof of Delivery
@@ -71,15 +71,15 @@ export default function About() {
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 mb-4">
               What makes us different
             </h2>
-            <div className="w-24 h-1 bg-blue-600 mx-auto"></div>
+            <div className="w-24 h-1 bg-emerald-600 mx-auto"></div>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Feature 1 */}
             <div className="flex gap-4 p-6 rounded-xl hover:shadow-lg transition-shadow">
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <QrCode className="w-6 h-6 text-blue-600" />
+                <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
+                  <QrCode className="w-6 h-6 text-emerald-700" />
                 </div>
               </div>
               <div>
@@ -96,8 +96,8 @@ export default function About() {
             {/* Feature 2 */}
             <div className="flex gap-4 p-6 rounded-xl hover:shadow-lg transition-shadow">
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <CheckCircle className="w-6 h-6 text-blue-600" />
+                <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
+                  <CheckCircle className="w-6 h-6 text-emerald-700" />
                 </div>
               </div>
               <div>
@@ -114,8 +114,8 @@ export default function About() {
             {/* Feature 3 */}
             <div className="flex gap-4 p-6 rounded-xl hover:shadow-lg transition-shadow">
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Eye className="w-6 h-6 text-blue-600" />
+                <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
+                  <Eye className="w-6 h-6 text-emerald-700" />
                 </div>
               </div>
               <div>
@@ -132,8 +132,8 @@ export default function About() {
             {/* Feature 4 */}
             <div className="flex gap-4 p-6 rounded-xl hover:shadow-lg transition-shadow">
               <div className="flex-shrink-0">
-                <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                  <Clock className="w-6 h-6 text-blue-600" />
+                <div className="w-12 h-12 bg-emerald-100 rounded-full flex items-center justify-center">
+                  <Clock className="w-6 h-6 text-emerald-700" />
                 </div>
               </div>
               <div>
@@ -151,20 +151,20 @@ export default function About() {
       </section>
 
       {/* Stats/Trust Section */}
-      <section className="py-20 bg-gradient-to-r from-blue-600 to-blue-800">
+      <section className="py-20 bg-gradient-to-r from-emerald-800 to-teal-800">
         <div className="max-w-7xl mx-auto px-4 text-center">
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div>
               <div className="text-4xl font-bold text-white mb-2">100%</div>
-              <div className="text-blue-100">Recipient Verified</div>
+              <div className="text-emerald-100">Recipient Verified</div>
             </div>
             <div>
               <div className="text-4xl font-bold text-white mb-2">Real-Time</div>
-              <div className="text-blue-100">Tracking Updates</div>
+              <div className="text-emerald-100">Tracking Updates</div>
             </div>
             <div>
               <div className="text-4xl font-bold text-white mb-2">Zero Disputes</div>
-              <div className="text-blue-100">QR Confirmed Deliveries</div>
+              <div className="text-emerald-100">QR Confirmed Deliveries</div>
             </div>
           </div>
         </div>
@@ -174,8 +174,8 @@ export default function About() {
       <section className="py-20 px-4">
         <div className="max-w-4xl mx-auto text-center">
           <div className="flex justify-center mb-6">
-            <div className="w-20 h-20 bg-blue-100 rounded-full flex items-center justify-center">
-              <Shield className="w-10 h-10 text-blue-600" />
+            <div className="w-20 h-20 bg-emerald-100 rounded-full flex items-center justify-center">
+              <Shield className="w-10 h-10 text-emerald-700" />
             </div>
           </div>
           <h2 className="text-3xl font-bold text-gray-900 mb-4">

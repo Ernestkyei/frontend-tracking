@@ -121,11 +121,12 @@ export default function Header() {
     <header className={`sticky top-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white/95 backdrop-blur-md shadow-lg' : 'bg-white shadow-md'}`}>
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16 lg:h-20">
+          {/* Logo - Warm, human, natural colors */}
           <Link to="/" className="flex items-center space-x-2 group">
-            <div className="bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg p-1.5 transition-transform group-hover:scale-105">
+            <div className="bg-gradient-to-r from-emerald-700 to-teal-700 rounded-lg p-1.5 transition-transform group-hover:scale-105">
               <Truck className="w-6 h-6 text-white" />
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-green-600 bg-clip-text text-transparent">
+            <span className="text-2xl font-bold text-gray-800">
               SwiftTrack
             </span>
           </Link>
@@ -134,15 +135,15 @@ export default function Header() {
             {publicLinks.map((link) => {
               const isActive = location.pathname === link.path;
               return (
-                <Link key={link.path} to={link.path} className={`relative px-4 py-2 rounded-lg transition-all duration-200 ${isActive ? 'text-blue-600 font-semibold' : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'}`}>
+                <Link key={link.path} to={link.path} className={`relative px-4 py-2 rounded-lg transition-all duration-200 ${isActive ? 'text-emerald-700 font-semibold' : 'text-gray-600 hover:text-emerald-700 hover:bg-gray-50'}`}>
                   {link.label}
-                  {isActive && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600 rounded-full" />}
+                  {isActive && <div className="absolute bottom-0 left-0 right-0 h-0.5 bg-emerald-600 rounded-full" />}
                 </Link>
               );
             })}
 
             {isLoggedIn && (
-              <Link to="/dashboard" className={`relative px-4 py-2 rounded-lg transition-all duration-200 ${location.pathname === '/dashboard' ? 'text-blue-600 font-semibold' : 'text-gray-700 hover:text-blue-600 hover:bg-gray-50'}`}>
+              <Link to="/dashboard" className={`relative px-4 py-2 rounded-lg transition-all duration-200 ${location.pathname === '/dashboard' ? 'text-emerald-700 font-semibold' : 'text-gray-600 hover:text-emerald-700 hover:bg-gray-50'}`}>
                 Dashboard
               </Link>
             )}
@@ -156,7 +157,7 @@ export default function Header() {
                   }}
                   className="flex items-center gap-2 focus:outline-none"
                 >
-                  <div className="flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold text-sm shadow-md hover:scale-105 transition-transform">
+                  <div className="flex items-center justify-center w-9 h-9 rounded-full bg-gradient-to-r from-emerald-700 to-teal-700 text-white font-semibold text-sm shadow-md hover:scale-105 transition-transform">
                     {getUserInitials(user?.name || 'User')}
                   </div>
                   <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform ${isDropdownOpen ? 'rotate-180' : ''}`} />
@@ -204,14 +205,14 @@ export default function Header() {
               </div>
             ) : (
               <div className="ml-4">
-                <Link to="/auth" className="bg-gradient-to-r from-blue-600 to-blue-700 text-white px-5 py-1.5 rounded-lg hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-md hover:shadow-lg text-sm font-medium">
+                <Link to="/auth" className="bg-emerald-700 hover:bg-emerald-800 text-white px-5 py-1.5 rounded-lg transition-all duration-200 shadow-md hover:shadow-lg text-sm font-medium">
                   Sign Up
                 </Link>
               </div>
             )}
           </div>
 
-          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden text-gray-600 hover:text-blue-600 focus:outline-none transition-colors" aria-label="Toggle menu">
+          <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden text-gray-600 hover:text-emerald-700 focus:outline-none transition-colors" aria-label="Toggle menu">
             {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
         </div>
@@ -222,7 +223,7 @@ export default function Header() {
               {publicLinks.map((link) => {
                 const isActive = location.pathname === link.path;
                 return (
-                  <Link key={link.path} to={link.path} className={`px-3 py-2 rounded-lg transition-all ${isActive ? 'bg-blue-50 text-blue-600 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`} onClick={() => setIsMobileMenuOpen(false)}>
+                  <Link key={link.path} to={link.path} className={`px-3 py-2 rounded-lg transition-all ${isActive ? 'bg-emerald-50 text-emerald-700 font-semibold' : 'text-gray-700 hover:bg-gray-50'}`} onClick={() => setIsMobileMenuOpen(false)}>
                     {link.label}
                   </Link>
                 );
@@ -236,7 +237,7 @@ export default function Header() {
                 <div className="pt-3 mt-2 border-t border-gray-100">
                   {/* Mobile User Info */}
                   <div className="flex items-center gap-3 px-3 py-2 bg-gray-50 rounded-lg mb-2">
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold text-sm">
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-r from-emerald-700 to-teal-700 text-white font-semibold text-sm">
                       {getUserInitials(user?.name || 'User')}
                     </div>
                     <div>
@@ -273,7 +274,7 @@ export default function Header() {
                 </div>
               ) : (
                 <div className="pt-3 mt-2 border-t border-gray-100">
-                  <Link to="/auth" className="block text-center px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700" onClick={() => setIsMobileMenuOpen(false)}>
+                  <Link to="/auth" className="block text-center px-4 py-2 bg-emerald-700 text-white rounded-lg hover:bg-emerald-800" onClick={() => setIsMobileMenuOpen(false)}>
                     Sign Up
                   </Link>
                 </div>
