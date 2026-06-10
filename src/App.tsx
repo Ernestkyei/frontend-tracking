@@ -10,6 +10,7 @@ import Auth from './pages/auth/Auth';
 import Dashboard from './pages/dashboard/Dashboard';
 import Track from './pages/dashboard/track/Track';
 import CreateShipment from './pages/dashboard/createShipment/CreateShipment';
+import Profile from './pages/auth/profile/Profile';
 
 import './App.css';
 
@@ -27,6 +28,7 @@ function App() {
             <Route path="/auth" element={<Auth />} />
             <Route path="/login" element={<Auth />} />
             <Route path="/signup" element={<Auth />} />
+            <Route path="/profile" element={<Profile />} />
             <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/track" element={<Track />} />
             <Route path="/track/:trackingNumber" element={<Track />} />

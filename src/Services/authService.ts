@@ -25,7 +25,7 @@ export const authService = {
       
       return response;
     } catch (error) {
-      // ✅ Fix: preserve the original error with cause
+      // Fix: preserve the original error with cause
       throw new Error(
         error instanceof Error ? error.message : 'Registration failed',
         { cause: error }
@@ -48,7 +48,7 @@ export const authService = {
       
       return response;
     } catch (error) {
-      // ✅ Fix: preserve the original error with cause
+      //  preserve the original error with cause
       throw new Error(
         error instanceof Error ? error.message : 'Login failed',
         { cause: error }
@@ -61,7 +61,7 @@ export const authService = {
       const response = await get<ApiResponse<User>>(API_ENDPOINTS.AUTH.PROFILE, true);
       return response;
     } catch (error) {
-      // ✅ Fix: preserve the original error with cause
+      //  preserve the original error with cause
       throw new Error(
         error instanceof Error ? error.message : 'Failed to load profile',
         { cause: error }
@@ -78,7 +78,7 @@ export const authService = {
       );
       return response;
     } catch (error) {
-      // ✅ Fix: preserve the original error with cause
+      //  preserve the original error with cause
       throw new Error(
         error instanceof Error ? error.message : 'Failed to change password',
         { cause: error }

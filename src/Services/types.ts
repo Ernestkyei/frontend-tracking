@@ -1,6 +1,7 @@
 // src/services/types.ts
 
 export interface ApiResponse<T = unknown> {
+  user: any;
   success: boolean;
   message?: string;
   data?: T;
