@@ -1,4 +1,3 @@
-// pages/Profile.tsx
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -82,12 +81,22 @@ export default function Profile() {
 
   const loadUserProfile = async () => {
     try {
-      const response = await authService.getProfile() as ApiResponse<UserProfile>;
+      const response = await authService.getProfile();
       
-      const userData = response?.data?.user || 
-                       response?.data || 
-                       (response as any)?.user || 
-                       response;
+      // Handle different possible response structures
+      let userData = null;
+      
+      if (response?.user) {
+        userData = response.user;
+      } else if (response?.data?.user) {
+        userData = response.data.user;
+      } else if (response?.data) {
+        userData = response.data;
+      } else if (response?.id) {
+        userData = response;
+      } else {
+        userData = response;
+      }
       
       if (userData?.id) {
         setUser(userData);
@@ -98,24 +107,43 @@ export default function Profile() {
       } else {
         toast.error('Failed to load profile data');
       }
-    } catch {
+    } catch (error) {
+      console.error('Profile load error:', error);
       toast.error('Failed to load profile');
     }
   };
 
   const loadRecentShipments = async () => {
     try {
-      const response = await shipmentService.getMyShipments() as ApiResponse<Shipment[]>;
+      const response = await shipmentService.getMyShipments();
       
-      const shipmentsData = response?.data?.data || 
-                           response?.data || 
-                           response;
+      // Handle different possible response structures
+      let shipmentsData: Shipment[] = [];
       
-      if (Array.isArray(shipmentsData)) {
+      if (response?.data?.data && Array.isArray(response.data.data)) {
+        shipmentsData = response.data.data;
+      } else if (response?.data && Array.isArray(response.data)) {
+        shipmentsData = response.data;
+      } else if (response?.data?.shipments && Array.isArray(response.data.shipments)) {
+        shipmentsData = response.data.shipments;
+      } else if (Array.isArray(response)) {
+        shipmentsData = response;
+      } else if (response?.data && typeof response.data === 'object' && !Array.isArray(response.data)) {
+        // If data is an object, try to find array property
+        for (const key in response.data) {
+          if (Array.isArray(response.data[key])) {
+            shipmentsData = response.data[key];
+            break;
+          }
+        }
+      }
+      
+      if (shipmentsData.length > 0) {
         setRecentShipments(shipmentsData.slice(0, 3));
       }
-    } catch {
+    } catch (error) {
       // Silent fail - not critical
+      console.error('Shipments load error:', error);
     }
   };
 
