@@ -37,12 +37,6 @@ interface Shipment {
   createdAt: string;
 }
 
-interface ApiResponse<T> {
-  success: boolean;
-  message: string;
-  data: T;
-}
-
 export default function Profile() {
   const navigate = useNavigate();
   const [user, setUser] = useState<UserProfile | null>(() => {
@@ -82,29 +76,40 @@ export default function Profile() {
   const loadUserProfile = async () => {
     try {
       const response = await authService.getProfile();
+      console.log('Profile response:', response); // For debugging
       
       // Handle different possible response structures
       let userData = null;
       
-      if (response?.user) {
-        userData = response.user;
-      } else if (response?.data?.user) {
-        userData = response.data.user;
-      } else if (response?.data) {
-        userData = response.data;
-      } else if (response?.id) {
-        userData = response;
-      } else {
-        userData = response;
+      if (response && typeof response === 'object') {
+        // Check if response has a user property
+        if ('user' in response && response.user) {
+          userData = response.user;
+        }
+        // Check if response has data property with user
+        else if ('data' in response && response.data && typeof response.data === 'object') {
+          if ('user' in response.data && response.data.user) {
+            userData = response.data.user;
+          } else if ('id' in response.data) {
+            userData = response.data;
+          } else {
+            userData = response.data;
+          }
+        }
+        // Check if response itself is the user object
+        else if ('id' in response) {
+          userData = response;
+        }
       }
       
-      if (userData?.id) {
+      if (userData && userData.id) {
         setUser(userData);
         setFormData({
           name: userData.name || '',
           phone: userData.phone || '',
         });
       } else {
+        console.error('Could not extract user data from:', response);
         toast.error('Failed to load profile data');
       }
     } catch (error) {
@@ -116,25 +121,37 @@ export default function Profile() {
   const loadRecentShipments = async () => {
     try {
       const response = await shipmentService.getMyShipments();
+      console.log('Shipments response:', response); // For debugging
       
       // Handle different possible response structures
       let shipmentsData: Shipment[] = [];
       
-      if (response?.data?.data && Array.isArray(response.data.data)) {
-        shipmentsData = response.data.data;
-      } else if (response?.data && Array.isArray(response.data)) {
-        shipmentsData = response.data;
-      } else if (response?.data?.shipments && Array.isArray(response.data.shipments)) {
-        shipmentsData = response.data.shipments;
-      } else if (Array.isArray(response)) {
-        shipmentsData = response;
-      } else if (response?.data && typeof response.data === 'object' && !Array.isArray(response.data)) {
-        // If data is an object, try to find array property
-        for (const key in response.data) {
-          if (Array.isArray(response.data[key])) {
-            shipmentsData = response.data[key];
-            break;
+      if (response && typeof response === 'object') {
+        // If response is directly an array
+        if (Array.isArray(response)) {
+          shipmentsData = response;
+        }
+        // If response has data property
+        else if ('data' in response) {
+          if (Array.isArray(response.data)) {
+            shipmentsData = response.data;
           }
+          // If data has shipments array
+          else if (response.data && typeof response.data === 'object' && 'shipments' in response.data && Array.isArray(response.data.shipments)) {
+            shipmentsData = response.data.shipments;
+          }
+          // If data has items array
+          else if (response.data && typeof response.data === 'object' && 'items' in response.data && Array.isArray(response.data.items)) {
+            shipmentsData = response.data.items;
+          }
+        }
+        // If response has shipments property
+        else if ('shipments' in response && Array.isArray(response.shipments)) {
+          shipmentsData = response.shipments;
+        }
+        // If response has items property
+        else if ('items' in response && Array.isArray(response.items)) {
+          shipmentsData = response.items;
         }
       }
       
