@@ -75,30 +75,23 @@ export default function Profile() {
 
   const loadUserProfile = async () => {
     try {
-      const response = await authService.getProfile();
-      console.log('Profile response:', response); // For debugging
+      const response: any = await authService.getProfile();
+      console.log('Profile response:', response);
       
-      // Handle different possible response structures
       let userData = null;
       
-      if (response && typeof response === 'object') {
-        // Check if response has a user property
-        if ('user' in response && response.user) {
+      // Try to extract user data from various possible structures
+      if (response) {
+        if (response.user) {
           userData = response.user;
-        }
-        // Check if response has data property with user
-        else if ('data' in response && response.data && typeof response.data === 'object') {
-          if ('user' in response.data && response.data.user) {
-            userData = response.data.user;
-          } else if ('id' in response.data) {
-            userData = response.data;
-          } else {
-            userData = response.data;
-          }
-        }
-        // Check if response itself is the user object
-        else if ('id' in response) {
+        } else if (response.data && response.data.user) {
+          userData = response.data.user;
+        } else if (response.data && response.data.id) {
+          userData = response.data;
+        } else if (response.id) {
           userData = response;
+        } else if (response.data) {
+          userData = response.data;
         }
       }
       
@@ -120,37 +113,35 @@ export default function Profile() {
 
   const loadRecentShipments = async () => {
     try {
-      const response = await shipmentService.getMyShipments();
-      console.log('Shipments response:', response); // For debugging
+      const response: any = await shipmentService.getMyShipments();
+      console.log('Shipments response:', response);
       
-      // Handle different possible response structures
       let shipmentsData: Shipment[] = [];
       
-      if (response && typeof response === 'object') {
-        // If response is directly an array
+      // Try to extract shipments array from various possible structures
+      if (response) {
+        // Direct array
         if (Array.isArray(response)) {
           shipmentsData = response;
         }
-        // If response has data property
-        else if ('data' in response) {
+        // Response with data property
+        else if (response.data) {
           if (Array.isArray(response.data)) {
             shipmentsData = response.data;
-          }
-          // If data has shipments array
-          else if (response.data && typeof response.data === 'object' && 'shipments' in response.data && Array.isArray(response.data.shipments)) {
+          } else if (response.data.shipments && Array.isArray(response.data.shipments)) {
             shipmentsData = response.data.shipments;
-          }
-          // If data has items array
-          else if (response.data && typeof response.data === 'object' && 'items' in response.data && Array.isArray(response.data.items)) {
+          } else if (response.data.items && Array.isArray(response.data.items)) {
             shipmentsData = response.data.items;
+          } else if (response.data.data && Array.isArray(response.data.data)) {
+            shipmentsData = response.data.data;
           }
         }
-        // If response has shipments property
-        else if ('shipments' in response && Array.isArray(response.shipments)) {
+        // Response with shipments property
+        else if (response.shipments && Array.isArray(response.shipments)) {
           shipmentsData = response.shipments;
         }
-        // If response has items property
-        else if ('items' in response && Array.isArray(response.items)) {
+        // Response with items property
+        else if (response.items && Array.isArray(response.items)) {
           shipmentsData = response.items;
         }
       }
