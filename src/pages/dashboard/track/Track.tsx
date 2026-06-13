@@ -225,10 +225,10 @@ const STATUS_META: Record<string, { label: string; chip: string; dot: string; ic
 };
 
 function StatusChip({ status }: { status: string }) {
-  const m = STATUS_META[status] ?? { 
-    label: status, 
-    chip: 'bg-gray-50 text-gray-600 border border-gray-200', 
-    icon: <Clock className="w-3.5 h-3.5" /> 
+  const m = STATUS_META[status] ?? {
+    label: status,
+    chip: 'bg-gray-50 text-gray-600 border border-gray-200',
+    icon: <Clock className="w-3.5 h-3.5" />,
   };
   return (
     <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${m.chip}`}>
@@ -329,7 +329,7 @@ export default function Track() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  
+
   // Modal state
   const [modalOpen, setModalOpen] = useState(false);
   const [modalTitle, setModalTitle] = useState('');
@@ -348,21 +348,19 @@ export default function Track() {
     try {
       const response = await shipmentService.trackShipment(num);
       console.log('Track response:', response);
-      
-      // Extract shipment data from response
+
+      // ✅ FIXED: use unknown as intermediate cast to satisfy TypeScript
       let backendShipment: BackendShipment | null = null;
-      
+
       if (response) {
-        // Handle different response structures
         if (response.data && typeof response.data === 'object' && 'id' in response.data) {
-          backendShipment = response.data as BackendShipment;
+          backendShipment = response.data as unknown as BackendShipment;
         } else if (response && typeof response === 'object' && 'id' in response) {
-          backendShipment = response as BackendShipment;
+          backendShipment = response as unknown as BackendShipment;
         }
       }
-      
+
       if (backendShipment && backendShipment.id) {
-        // Map backend shipment to our Shipment interface
         const formattedShipment: Shipment = {
           id: backendShipment.id,
           trackingNumber: backendShipment.trackingNumber,
@@ -387,7 +385,7 @@ export default function Track() {
             location: update.location,
             status: update.status,
             note: update.note,
-            timestamp: update.timestamp
+            timestamp: update.timestamp,
           })),
         };
         setShipment(formattedShipment);
@@ -405,18 +403,17 @@ export default function Track() {
     }
   }, []);
 
-  // Load shipment when tracking number changes - using a flag to prevent the warning
   useEffect(() => {
     let isSubscribed = true;
-    
+
     const loadShipment = async () => {
       if (trackingNumber && isSubscribed) {
         await fetchShipment(trackingNumber);
       }
     };
-    
+
     loadShipment();
-    
+
     return () => {
       isSubscribed = false;
     };
@@ -592,7 +589,7 @@ export default function Track() {
                   {
                     icon: <Clock className="w-4 h-4 text-blue-500" />,
                     label: 'Last update',
-                    value: shipment.locationUpdates.length > 0 
+                    value: shipment.locationUpdates.length > 0
                       ? fmt(shipment.locationUpdates[shipment.locationUpdates.length - 1]?.timestamp ?? shipment.createdAt)
                       : fmt(shipment.createdAt),
                   },
@@ -655,7 +652,7 @@ export default function Track() {
               </InfoCard>
 
               {/* Sender Card - Clickable */}
-              <div 
+              <div
                 onClick={openSenderModal}
                 className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden cursor-pointer hover:shadow-md hover:border-gray-200 transition-all duration-200"
               >
@@ -684,7 +681,7 @@ export default function Track() {
               </div>
 
               {/* Recipient Card - Clickable */}
-              <div 
+              <div
                 onClick={openRecipientModal}
                 className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden cursor-pointer hover:shadow-md hover:border-gray-200 transition-all duration-200"
               >
