@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   Mail,
@@ -37,17 +37,39 @@ interface Shipment {
   createdAt: string;
 }
 
+interface ProfileResponse {
+
+  user?: UserProfile;
+  data?: {
+    user?: UserProfile;
+    id?: string;
+    name?: string;
+    email?: string;
+    phone?: string | null;
+    role?: string;
+    createdAt?: string;
+    updatedAt?: string;
+  } | UserProfile;
+  id?: string;
+  name?: string;
+  email?: string;
+  phone?: string | null;
+  role?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+interface ShipmentsResponse {
+  data?: Shipment[] | { shipments?: Shipment[]; items?: Shipment[]; data?: Shipment[] };
+  shipments?: Shipment[];
+  items?: Shipment[];
+}
+
 export default function Profile() {
   const navigate = useNavigate();
-  const [user, setUser] = useState<UserProfile | null>(() => {
-    const cached = localStorage.getItem('user_profile');
-    return cached ? JSON.parse(cached) : null;
-  });
-  const [recentShipments, setRecentShipments] = useState<Shipment[]>(() => {
-    const cached = localStorage.getItem('recent_shipments');
-    return cached ? JSON.parse(cached) : [];
-  });
-  const [loading, setLoading] = useState(!user);
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [recentShipments, setRecentShipments] = useState<Shipment[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [formData, setFormData] = useState({ name: '', phone: '' });
   const [isUpdating, setIsUpdating] = useState(false);
@@ -58,7 +80,6 @@ export default function Profile() {
     confirmPassword: '',
   });
 
-  // Save to localStorage whenever data changes
   useEffect(() => {
     if (user) {
       localStorage.setItem('user_profile', JSON.stringify(user));
@@ -71,91 +92,81 @@ export default function Profile() {
     }
   }, [recentShipments]);
 
-  // ========== DATA FETCHING ==========
+  const clearUserCache = () => {
+    localStorage.removeItem('user_profile');
+    localStorage.removeItem('recent_shipments');
+    setUser(null);
+    setRecentShipments([]);
+  };
 
-  const loadUserProfile = async () => {
+
+
+  
+
+  const loadUserProfile = useCallback(async () => {
     try {
-      const response: any = await authService.getProfile();
-      console.log('Profile response:', response);
-      
-      let userData = null;
-      
-      // Try to extract user data from various possible structures
+      const response = await authService.getProfile() as ProfileResponse;
+
+      let userData: UserProfile | null = null;
+
       if (response) {
-        if (response.user) {
+        if (response.user?.id) {
           userData = response.user;
-        } else if (response.data && response.data.user) {
+        } else if (response.data && 'user' in response.data && response.data.user?.id) {
           userData = response.data.user;
-        } else if (response.data && response.data.id) {
-          userData = response.data;
+        } else if (response.data && 'id' in response.data && response.data.id) {
+          userData = response.data as UserProfile;
         } else if (response.id) {
-          userData = response;
-        } else if (response.data) {
-          userData = response.data;
+          userData = response as unknown as UserProfile;
         }
       }
-      
-      if (userData && userData.id) {
+
+      if (userData?.id) {
         setUser(userData);
-        setFormData({
-          name: userData.name || '',
-          phone: userData.phone || '',
-        });
+        setFormData({ name: userData.name || '', phone: userData.phone || '' });
       } else {
-        console.error('Could not extract user data from:', response);
         toast.error('Failed to load profile data');
+        clearUserCache();
       }
     } catch (error) {
       console.error('Profile load error:', error);
       toast.error('Failed to load profile');
+      clearUserCache();
     }
-  };
+  }, []);
 
-  const loadRecentShipments = async () => {
+  const loadRecentShipments = useCallback(async () => {
     try {
-      const response: any = await shipmentService.getMyShipments();
-      console.log('Shipments response:', response);
-      
+      const response = await shipmentService.getMyShipments() as ShipmentsResponse;
+
       let shipmentsData: Shipment[] = [];
-      
-      // Try to extract shipments array from various possible structures
+
       if (response) {
-        // Direct array
         if (Array.isArray(response)) {
           shipmentsData = response;
-        }
-        // Response with data property
-        else if (response.data) {
-          if (Array.isArray(response.data)) {
-            shipmentsData = response.data;
-          } else if (response.data.shipments && Array.isArray(response.data.shipments)) {
+        } else if (Array.isArray(response.data)) {
+          shipmentsData = response.data;
+        } else if (response.data && typeof response.data === 'object' && !Array.isArray(response.data)) {
+          if ('shipments' in response.data && Array.isArray(response.data.shipments)) {
             shipmentsData = response.data.shipments;
-          } else if (response.data.items && Array.isArray(response.data.items)) {
+          } else if ('items' in response.data && Array.isArray(response.data.items)) {
             shipmentsData = response.data.items;
-          } else if (response.data.data && Array.isArray(response.data.data)) {
+          } else if ('data' in response.data && Array.isArray(response.data.data)) {
             shipmentsData = response.data.data;
           }
-        }
-        // Response with shipments property
-        else if (response.shipments && Array.isArray(response.shipments)) {
+        } else if (Array.isArray(response.shipments)) {
           shipmentsData = response.shipments;
-        }
-        // Response with items property
-        else if (response.items && Array.isArray(response.items)) {
+        } else if (Array.isArray(response.items)) {
           shipmentsData = response.items;
         }
       }
-      
-      if (shipmentsData.length > 0) {
-        setRecentShipments(shipmentsData.slice(0, 3));
-      }
-    } catch (error) {
-      // Silent fail - not critical
-      console.error('Shipments load error:', error);
-    }
-  };
 
-  // ========== PROFILE ACTIONS ==========
+      setRecentShipments(shipmentsData.slice(0, 3));
+    } catch (error) {
+      console.error('Shipments load error:', error);
+      setRecentShipments([]);
+    }
+  }, []);
 
   const handleUpdateProfile = async () => {
     if (!formData.name.trim()) {
@@ -165,15 +176,40 @@ export default function Profile() {
 
     setIsUpdating(true);
     try {
-      if (user) {
-        const updatedUser = { ...user, name: formData.name, phone: formData.phone };
-        setUser(updatedUser);
-        localStorage.setItem('user_profile', JSON.stringify(updatedUser));
+      const response = await authService.updateProfile({
+        name: formData.name,
+        phone: formData.phone,
+      }) as ProfileResponse;
+
+      let updatedUserData: UserProfile | null = null;
+
+      if (response) {
+        if (response.data && 'id' in response.data && response.data.id) {
+          updatedUserData = response.data as UserProfile;
+        } else if (response.data && 'user' in response.data && response.data.user?.id) {
+          updatedUserData = response.data.user;
+        } else if (response.id) {
+          updatedUserData = response as unknown as UserProfile;
+        } else if (response.user?.id) {
+          updatedUserData = response.user;
+        }
       }
-      toast.success('Profile updated successfully!');
-      setIsEditing(false);
-    } catch {
-      toast.error('Failed to update profile');
+
+      if (updatedUserData?.id) {
+        setUser(updatedUserData);
+        localStorage.setItem('user_profile', JSON.stringify(updatedUserData));
+        localStorage.setItem('user', JSON.stringify(updatedUserData));
+        setFormData({ name: updatedUserData.name || '', phone: updatedUserData.phone || '' });
+        toast.success('Profile updated successfully!');
+        setIsEditing(false);
+      } else {
+        toast.error('Profile updated but failed to refresh data');
+        await loadUserProfile();
+        setIsEditing(false);
+      }
+    } catch (error) {
+      const err = error as { message?: string };
+      toast.error(err?.message || 'Failed to update profile');
     } finally {
       setIsUpdating(false);
     }
@@ -194,12 +230,11 @@ export default function Profile() {
       toast.success('Password changed successfully!');
       setIsChangingPassword(false);
       setPasswordData({ currentPassword: '', newPassword: '', confirmPassword: '' });
-    } catch {
-      toast.error('Failed to change password');
+    } catch (error) {
+      const err = error as { message?: string };
+      toast.error(err?.message || 'Failed to change password');
     }
   };
-
-  // ========== HELPER FUNCTIONS ==========
 
   const getStatusColor = (status: string) => {
     switch (status?.toUpperCase()) {
@@ -232,32 +267,22 @@ export default function Profile() {
     }
   };
 
-  // ========== EFFECT ==========
-
   useEffect(() => {
     const token = authService.getToken();
-    
     if (!token) {
       navigate('/auth');
       return;
     }
-    
-    const fetchData = async () => {
-      if (!user) {
-        setLoading(true);
-        await loadUserProfile();
-        await loadRecentShipments();
-        setLoading(false);
-      } else {
-        // Refresh shipments in background without affecting loading state
-        loadRecentShipments().catch(() => {});
-      }
-    };
-    
-    fetchData();
-  }, [navigate, user]);
 
-  // ========== RENDER ==========
+    const fetchData = async () => {
+      setLoading(true);
+      await loadUserProfile();
+      await loadRecentShipments();
+      setLoading(false);
+    };
+
+    fetchData();
+  }, [navigate, loadUserProfile, loadRecentShipments]);
 
   if (loading) {
     return (
@@ -275,8 +300,8 @@ export default function Profile() {
       <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
         <div className="text-center max-w-md p-8 bg-white rounded-lg shadow-lg">
           <p className="text-gray-600 mb-4">Unable to load profile data</p>
-          <button 
-            onClick={() => window.location.reload()} 
+          <button
+            onClick={() => window.location.reload()}
             className="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700"
           >
             Retry
@@ -288,7 +313,6 @@ export default function Profile() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-      {/* Header */}
       <div className="bg-white border-b border-gray-100 sticky top-0 z-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4">
           <div className="flex items-center gap-3">
@@ -305,7 +329,6 @@ export default function Profile() {
 
       <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          {/* Profile Info Card */}
           <div className="lg:col-span-1">
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden sticky top-24">
               <div className="bg-gradient-to-r from-emerald-700 to-teal-700 px-6 py-8 text-center">
@@ -315,7 +338,7 @@ export default function Profile() {
                 <h2 className="text-xl font-semibold text-white mt-2">{user.name}</h2>
                 <p className="text-emerald-100 text-sm mt-1">{user.role}</p>
               </div>
-              
+
               <div className="p-6 space-y-4">
                 <div className="flex items-center gap-3 text-gray-600">
                   <Mail className="w-4 h-4" />
@@ -340,9 +363,7 @@ export default function Profile() {
             </div>
           </div>
 
-          {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
-            {/* Edit Profile Section */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-gray-900">Profile Information</h3>
@@ -416,7 +437,6 @@ export default function Profile() {
               </div>
             </div>
 
-            {/* Change Password Modal */}
             {isChangingPassword && (
               <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
                 <div className="bg-white rounded-2xl max-w-md w-full p-6">
@@ -470,7 +490,6 @@ export default function Profile() {
               </div>
             )}
 
-            {/* Recent Shipments */}
             <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
               <div className="px-6 py-4 border-b border-gray-100">
                 <h3 className="text-lg font-semibold text-gray-900">Recent Shipments</h3>

@@ -1,5 +1,5 @@
 // src/services/shipmentService.ts
-import { get, post } from './api';
+import { get, post, del } from './api';
 import { API_ENDPOINTS } from '../config/endpoints';
 import type { ApiResponse, Shipment, CreateShipmentData } from './types';
 
@@ -30,5 +30,13 @@ export const shipmentService = {
 
   getMyShipments: async (): Promise<ApiResponse<Shipment[]>> => {
     return await get<ApiResponse<Shipment[]>>(API_ENDPOINTS.TRACKING.MY_SHIPMENTS, true);
+  },
+
+  //  Delete shipment by ID
+  deleteShipment: async (shipmentId: string): Promise<ApiResponse<void>> => {
+    return await del<ApiResponse<void>>(
+      API_ENDPOINTS.TRACKING.DELETE_SHIPMENT(shipmentId),
+      true
+    );
   },
 };

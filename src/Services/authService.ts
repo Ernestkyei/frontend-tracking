@@ -25,7 +25,6 @@ export const authService = {
       
       return response;
     } catch (error) {
-      // Fix: preserve the original error with cause
       throw new Error(
         error instanceof Error ? error.message : 'Registration failed',
         { cause: error }
@@ -48,7 +47,6 @@ export const authService = {
       
       return response;
     } catch (error) {
-      //  preserve the original error with cause
       throw new Error(
         error instanceof Error ? error.message : 'Login failed',
         { cause: error }
@@ -61,9 +59,31 @@ export const authService = {
       const response = await get<ApiResponse<User>>(API_ENDPOINTS.AUTH.PROFILE, true);
       return response;
     } catch (error) {
-      //  preserve the original error with cause
       throw new Error(
         error instanceof Error ? error.message : 'Failed to load profile',
+        { cause: error }
+      );
+    }
+  },
+
+  
+  updateProfile: async (data: { name: string; phone?: string }): Promise<ApiResponse<User>> => {
+    try {
+      const response = await put<ApiResponse<User>>(
+        API_ENDPOINTS.AUTH.UPDATE_PROFILE,
+        data,
+        true
+      );
+      
+      // Update localStorage with the new user data
+      if (response.data) {
+        localStorage.setItem('user', JSON.stringify(response.data));
+      }
+      
+      return response;
+    } catch (error) {
+      throw new Error(
+        error instanceof Error ? error.message : 'Failed to update profile',
         { cause: error }
       );
     }
@@ -78,7 +98,6 @@ export const authService = {
       );
       return response;
     } catch (error) {
-      //  preserve the original error with cause
       throw new Error(
         error instanceof Error ? error.message : 'Failed to change password',
         { cause: error }
@@ -89,6 +108,8 @@ export const authService = {
   logout: (): void => {
     localStorage.removeItem('token');
     localStorage.removeItem('user');
+    localStorage.removeItem('user_profile'); 
+    localStorage.removeItem('recent_shipments'); 
   },
 
   isAuthenticated: (): boolean => {

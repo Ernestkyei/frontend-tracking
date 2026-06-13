@@ -8,13 +8,14 @@ export const API_ENDPOINTS = {
     LOGIN: '/auth/login',
     VERIFY: '/auth/verify',
     PROFILE: '/auth/profile',
+    UPDATE_PROFILE: '/auth/profile',
     CHANGE_PASSWORD: '/auth/change-password',
   },
   TRACKING: {
-
     TRACK: (trackingNumber: string) => `/tracking/track/${trackingNumber}`,
     SCAN: (trackingNumber: string) => `/tracking/scan/${trackingNumber}`,
     CREATE_SHIPMENT: '/tracking/shipments',
     MY_SHIPMENTS: '/tracking/my-shipments',
+    DELETE_SHIPMENT: (id: string) => `/tracking/shipments/${id}`,
   },
 };

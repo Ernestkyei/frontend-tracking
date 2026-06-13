@@ -264,18 +264,27 @@ export default function CreateShipment() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!validateStep()) return;
-    
+
     setIsLoading(true);
     const loadingToast = toast.loading('Creating your shipment...');
-    
-    // Map form data to backend expectations
+
+    // ✅ FIXED: all fields including recipientName are now sent
     const shipmentData: CreateShipmentData = {
+      // Sender (new fields)
+      senderName: formData.senderName,
+      senderEmail: formData.senderEmail || undefined,
+      senderPhone: formData.senderPhone || undefined,
+      // Legacy fallbacks (backend uses these too)
       customerName: formData.senderName,
-      customerEmail: formData.senderEmail,
+      customerEmail: formData.senderEmail || undefined,
+      customerPhone: formData.senderPhone || undefined,
+      // Recipient ← was missing before, now included
+      recipientName: formData.recipientName || undefined,
+      recipientPhone: formData.recipientPhone || undefined,
+      recipientEmail: formData.recipientEmail || undefined,
+      // Package & address
       pickupAddress: formData.pickupAddress,
       deliveryAddress: formData.deliveryAddress,
-      customerPhone: formData.senderPhone || undefined,
-      recipientPhone: formData.recipientPhone || undefined,
       description: formData.packageDescription || undefined,
       weight: formData.estimatedWeight ? parseFloat(formData.estimatedWeight) : undefined,
     };
@@ -283,7 +292,7 @@ export default function CreateShipment() {
     try {
       const response = await shipmentService.createShipment(shipmentData);
       toast.dismiss(loadingToast);
-      
+
       if (response.success && response.data?.trackingNumber) {
         setTrackingNumber(response.data.trackingNumber);
         toast.success(`Shipment created! Tracking #: ${response.data.trackingNumber}`);
@@ -300,9 +309,9 @@ export default function CreateShipment() {
   };
 
   if (success) {
-    return <SuccessScreen tracking={trackingNumber} onNew={() => { 
-      setSuccess(false); 
-      setFormData(EMPTY_FORM); 
+    return <SuccessScreen tracking={trackingNumber} onNew={() => {
+      setSuccess(false);
+      setFormData(EMPTY_FORM);
       setStep(0);
     }} />;
   }

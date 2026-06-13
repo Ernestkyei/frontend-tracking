@@ -85,6 +85,7 @@ export default function Dashboard() {
   const [statusFilter, setStatusFilter] = useState('ALL');
   const [currentPage, setCurrentPage] = useState(1);
   const [rowsPerPage, setRowsPerPage] = useState(5);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // ========== FUNCTIONS ==========
 
@@ -103,6 +104,8 @@ export default function Dashboard() {
     setLoading(true);
     try {
       const response = await shipmentService.getMyShipments();
+      console.log('Shipments response:', response);
+      
       if (response.success && response.data) {
         const formattedShipments = response.data.map((shipment: any) => ({
           id: shipment.id,
@@ -150,12 +153,31 @@ export default function Dashboard() {
     setShowDeleteConfirm(true);
   };
 
-  const confirmDelete = () => {
-    if (shipmentToDelete) {
-      setShipments(shipments.filter(s => s.id !== shipmentToDelete.id));
+  // ✅ FIXED: updates both shipments and filteredShipments
+  const confirmDelete = async () => {
+    if (!shipmentToDelete) return;
+
+    setIsDeleting(true);
+    const toastId = toast.loading('Deleting shipment...');
+
+    try {
+      const response = await shipmentService.deleteShipment(shipmentToDelete.id);
+
+      if (response.success) {
+        // ✅ Remove from both states so UI updates immediately
+        setShipments(prev => prev.filter(s => s.id !== shipmentToDelete.id));
+        setFilteredShipments(prev => prev.filter(s => s.id !== shipmentToDelete.id));
+        toast.success('Shipment deleted successfully', { id: toastId });
+      } else {
+        toast.error(response.message || 'Failed to delete shipment', { id: toastId });
+      }
+    } catch (error) {
+      console.error('Delete error:', error);
+      toast.error('Failed to delete shipment', { id: toastId });
+    } finally {
+      setIsDeleting(false);
       setShowDeleteConfirm(false);
       setShipmentToDelete(null);
-      toast.success('Shipment deleted successfully');
     }
   };
 
@@ -189,7 +211,6 @@ export default function Dashboard() {
 
   // ========== EFFECTS ==========
 
-  // Check auth and load data
   useEffect(() => {
     const token = localStorage.getItem('token');
     if (!token) {
@@ -200,21 +221,20 @@ export default function Dashboard() {
     loadShipments();
   }, [navigate]);
 
-  // Filter shipments
   useEffect(() => {
     let filtered = [...shipments];
-    
+
     if (searchTerm) {
-      filtered = filtered.filter(s => 
+      filtered = filtered.filter(s =>
         s.trackingNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
         s.packageType.toLowerCase().includes(searchTerm.toLowerCase())
       );
     }
-    
+
     if (statusFilter !== 'ALL') {
       filtered = filtered.filter(s => s.status === statusFilter);
     }
-    
+
     setFilteredShipments(filtered);
     setCurrentPage(1);
   }, [searchTerm, statusFilter, shipments]);
@@ -265,7 +285,7 @@ export default function Dashboard() {
               </h1>
               <p className="text-gray-500 mt-1">Track and manage all your shipments</p>
             </div>
-            <Button 
+            <Button
               onClick={() => navigate('/create-shipment')}
               className="bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 shadow-lg hover:shadow-xl transition-all duration-300"
             >
@@ -385,12 +405,12 @@ export default function Dashboard() {
                   </TableHeader>
                   <TableBody>
                     {paginatedShipments.map((shipment) => (
-                      <TableRow 
-                        key={shipment.id} 
+                      <TableRow
+                        key={shipment.id}
                         className="cursor-pointer hover:bg-gray-50/80 transition-all duration-200 group border-b border-gray-50"
                         onClick={() => handleRowClick(shipment)}
                       >
-                        <TableCell 
+                        <TableCell
                           onClick={(e) => e.stopPropagation()}
                           className="font-mono text-sm font-medium"
                         >
@@ -407,7 +427,7 @@ export default function Dashboard() {
                           </button>
                         </TableCell>
                         <TableCell onClick={(e) => e.stopPropagation()}>
-                          <Badge 
+                          <Badge
                             className={`flex items-center gap-1.5 w-fit px-2.5 py-1 text-xs font-medium rounded-full border ${getStatusColorClass(shipment.status)}`}
                           >
                             {getStatusIcon(shipment.status)}
@@ -429,7 +449,9 @@ export default function Dashboard() {
                         </TableCell>
                         <TableCell>
                           <span className="text-sm text-gray-600">
-                            {new Date(shipment.expectedDelivery).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            {shipment.expectedDelivery
+                              ? new Date(shipment.expectedDelivery).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                              : 'N/A'}
                           </span>
                         </TableCell>
                         <TableCell className="text-center" onClick={(e) => e.stopPropagation()}>
@@ -478,10 +500,10 @@ export default function Dashboard() {
                     </SelectContent>
                   </Select>
                 </div>
-                
+
                 <div className="flex items-center gap-4">
                   <span className="text-sm text-gray-500">
-                    Showing {startIndex + 1} to {Math.min(startIndex + rowsPerPage, filteredShipments.length)} of {filteredShipments.length}
+                    Showing {filteredShipments.length === 0 ? 0 : startIndex + 1} to {Math.min(startIndex + rowsPerPage, filteredShipments.length)} of {filteredShipments.length}
                   </span>
                   <div className="flex gap-1">
                     <Button
@@ -497,7 +519,7 @@ export default function Dashboard() {
                       variant="outline"
                       size="sm"
                       onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
-                      disabled={currentPage === totalPages}
+                      disabled={currentPage === totalPages || totalPages === 0}
                       className="h-8 w-8 p-0 border-gray-200"
                     >
                       <ChevronRight className="h-4 w-4" />
@@ -531,8 +553,8 @@ export default function Dashboard() {
                   </button>
                 </div>
               </div>
-              <button 
-                onClick={() => setShowDetailsModal(false)} 
+              <button
+                onClick={() => setShowDetailsModal(false)}
                 className="text-gray-400 hover:text-gray-600 transition-colors"
               >
                 <X className="w-5 h-5" />
@@ -541,7 +563,7 @@ export default function Dashboard() {
 
             <div className="p-6 space-y-6">
               <div className="flex justify-center">
-                <Badge 
+                <Badge
                   className={`flex items-center gap-2 px-4 py-2 text-sm font-semibold rounded-full ${getStatusColorClass(selectedShipment.status)}`}
                 >
                   {getStatusIcon(selectedShipment.status)}
@@ -585,7 +607,11 @@ export default function Dashboard() {
                     </div>
                     <div className="flex justify-between py-1">
                       <span className="text-gray-500">Expected Delivery:</span>
-                      <span className="font-medium">{new Date(selectedShipment.expectedDelivery).toLocaleDateString()}</span>
+                      <span className="font-medium">
+                        {selectedShipment.expectedDelivery
+                          ? new Date(selectedShipment.expectedDelivery).toLocaleDateString()
+                          : 'N/A'}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -650,7 +676,7 @@ export default function Dashboard() {
               </div>
 
               <div className="flex gap-3 pt-4 border-t border-gray-100">
-                <Button 
+                <Button
                   onClick={() => {
                     setShowDetailsModal(false);
                     navigate(`/track/${selectedShipment.trackingNumber}`);
@@ -666,21 +692,29 @@ export default function Dashboard() {
         </div>
       )}
 
-      {/* Simple Delete Confirmation Modal */}
+      {/* Delete Confirmation Modal */}
       {showDeleteConfirm && shipmentToDelete && (
         <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-2xl max-w-md w-full p-6">
             <h3 className="text-xl font-semibold text-gray-900 mb-2">Confirm Delete</h3>
             <p className="text-gray-600 mb-4">
-              Are you sure you want to delete shipment <span className="font-mono font-semibold">{shipmentToDelete.trackingNumber}</span>?
+              Are you sure you want to delete shipment{' '}
+              <span className="font-mono font-semibold">{shipmentToDelete.trackingNumber}</span>?
               This action cannot be undone.
             </p>
             <div className="flex gap-3 justify-end">
-              <Button variant="outline" onClick={() => setShowDeleteConfirm(false)}>
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setShowDeleteConfirm(false);
+                  setShipmentToDelete(null);
+                }}
+                disabled={isDeleting}
+              >
                 Cancel
               </Button>
-              <Button onClick={confirmDelete} className="bg-red-600 hover:bg-red-700">
-                Delete
+              <Button onClick={confirmDelete} className="bg-red-600 hover:bg-red-700" disabled={isDeleting}>
+                {isDeleting ? 'Deleting...' : 'Delete'}
               </Button>
             </div>
           </div>

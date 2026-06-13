@@ -53,10 +53,14 @@ export interface Shipment {
   packageType: string;
   weight: number;
   description?: string;
+  // Sender fields
+  senderName?: string;
+  senderEmail?: string;
+  senderPhone?: string;
+  // Recipient fields
   recipientName?: string;
   recipientPhone?: string;
-  senderName?: string;
-  senderPhone?: string;
+  recipientEmail?: string;
   locationUpdates?: LocationUpdate[];
 }
 
@@ -69,13 +73,21 @@ export interface LocationUpdate {
 }
 
 export interface CreateShipmentData {
-  
-  customerName: string;      
-  customerEmail: string;     
+  // Sender fields (new)
+  senderName?: string;
+  senderEmail?: string;
+  senderPhone?: string;
+  // Legacy fallbacks (backend accepts both)
+  customerName?: string;
+  customerEmail?: string;
+  customerPhone?: string;
+  // Recipient fields ← were missing before
+  recipientName?: string;
+  recipientPhone?: string;
+  recipientEmail?: string;
+  // Package & address fields
   pickupAddress: string;
   deliveryAddress: string;
-  customerPhone?: string;    
-  recipientPhone?: string;
   description?: string;
   weight?: number;
   price?: number;
